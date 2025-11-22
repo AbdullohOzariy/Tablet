@@ -38,20 +38,28 @@ const BranchManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingId && !formState.name) return; // Prevent submitting empty new branch
+
     setIsSubmitting(true);
     try {
       if (editingId) {
-        const originalBranch = branches.find(b => b.id === editingId);
-        if (originalBranch) {
-            await updateBranch(editingId, { ...originalBranch, ...formState });
-            showToast('Filial muvaffaqiyatli yangilandi');
-        }
+        const updatedData: Branch = {
+            id: editingId,
+            name: formState.name,
+            address: formState.address,
+            phone: formState.phone,
+            customColor: formState.customColor,
+            logoUrl: formState.logoUrl,
+        };
+        await updateBranch(editingId, updatedData);
+        showToast('Filial muvaffaqiyatli yangilandi');
       } else {
         await addBranch(formState);
         showToast('Yangi filial qo\'shildi');
       }
       setIsModalOpen(false);
     } catch (error) {
+        console.error("Failed to save branch:", error);
         showToast('Xatolik yuz berdi!', 'error');
     } finally {
         setIsSubmitting(false);
@@ -195,7 +203,7 @@ const MenuManager: React.FC = () => {
     
     setIsSubmitting(true);
     try {
-        let payload = { ...dishForm, price: Number(dishForm.price) };
+        let payload: Omit<Dish, 'id'> = { ...dishForm, price: Number(dishForm.price) };
         if (!useVariants) payload.variants = [];
         else {
             if (!payload.variants?.length) { showToast("Variantlarni kiriting", 'error'); setIsSubmitting(false); return; }
@@ -206,7 +214,12 @@ const MenuManager: React.FC = () => {
         if (editingDishId) {
             const originalDish = dishes.find(d => d.id === editingDishId);
             if (originalDish) {
-                await updateDish(editingDishId, { ...originalDish, ...payload });
+                const updatedData: Dish = {
+                    ...originalDish,
+                    ...payload,
+                    id: editingDishId,
+                };
+                await updateDish(editingDishId, updatedData);
                 showToast('Taom yangilandi');
             }
         } else { 
@@ -215,6 +228,7 @@ const MenuManager: React.FC = () => {
         }
         setIsDishModalOpen(false);
     } catch (error) {
+        console.error("Failed to save dish:", error);
         showToast('Xatolik yuz berdi!', 'error');
     } finally {
         setIsSubmitting(false);
