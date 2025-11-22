@@ -38,12 +38,15 @@ const BranchManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingId && !formState.name) return; // Prevent submitting empty new branch
+    if (!formState.name || !formState.address || !formState.phone) {
+        showToast("Barcha maydonlarni to'ldiring!", "error");
+        return;
+    }
 
     setIsSubmitting(true);
     try {
       if (editingId) {
-        const updatedData: Branch = {
+        const branchToUpdate: Branch = {
             id: editingId,
             name: formState.name,
             address: formState.address,
@@ -51,7 +54,7 @@ const BranchManager: React.FC = () => {
             customColor: formState.customColor,
             logoUrl: formState.logoUrl,
         };
-        await updateBranch(editingId, updatedData);
+        await updateBranch(editingId, branchToUpdate);
         showToast('Filial muvaffaqiyatli yangilandi');
       } else {
         await addBranch(formState);
@@ -59,7 +62,7 @@ const BranchManager: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (error) {
-        console.error("Failed to save branch:", error);
+        console.error("Filialni saqlashda xatolik:", error);
         showToast('Xatolik yuz berdi!', 'error');
     } finally {
         setIsSubmitting(false);
@@ -214,12 +217,12 @@ const MenuManager: React.FC = () => {
         if (editingDishId) {
             const originalDish = dishes.find(d => d.id === editingDishId);
             if (originalDish) {
-                const updatedData: Dish = {
+                const dishToUpdate: Dish = {
                     ...originalDish,
                     ...payload,
                     id: editingDishId,
                 };
-                await updateDish(editingDishId, updatedData);
+                await updateDish(editingDishId, dishToUpdate);
                 showToast('Taom yangilandi');
             }
         } else { 
