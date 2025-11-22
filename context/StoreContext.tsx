@@ -1,11 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Branch, Category, Dish, Branding, CategoryViewType } from '../types';
+import { Branch, Category, Dish, Branding, CategoryViewType, UserInfo } from '../types';
 
-// API_URL endi dinamik
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001';
 
 interface StoreContextType {
   loading: boolean;
+  // Auth
+  userInfo: UserInfo | null;
+  signIn: (userData: UserInfo) => void;
+  signOut: () => void;
+
+  // Data
   branding: Branding | null;
   updateBranding: (settings: Partial<Branding>) => Promise<void>;
   
@@ -33,6 +38,28 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
+  
+  // --- Auth State ---
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(() => {
+    try {
+      const item = localStorage.getItem('userInfo');
+      return item ? JSON.parse(item) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const signIn = (userData: UserInfo) => {
+    setUserInfo(userData);
+    localStorage.setItem('userInfo', JSON.stringify(userData));
+  };
+
+  const signOut = () => {
+    setUserInfo(null);
+    localStorage.removeItem('userInfo');
+  };
+
+  // --- Data State ---
   const [branding, setBranding] = useState<Branding | null>(null);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -204,6 +231,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const value = {
     loading,
+    userInfo, signIn, signOut,
     branding, updateBranding,
     branches, addBranch, updateBranch, deleteBranch,
     categories, addCategory, updateCategory, deleteCategory,

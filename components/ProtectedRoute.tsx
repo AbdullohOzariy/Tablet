@@ -1,13 +1,16 @@
-import React, { useContext } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Store } from '../context/StoreContext';
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useStore } from '../context/StoreContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { state } = useContext(Store);
-  const { userInfo } = state;
+  const { userInfo } = useStore();
+  const location = useLocation();
 
   if (!userInfo) {
-    return <Navigate to="/admin/login" replace />;
+    // Redirect them to the /login page, but save the current location they were
+    // trying to go to. This allows us to send them along to that page after they
+    // log in, which is a nicer user experience than dropping them off on the home page.
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

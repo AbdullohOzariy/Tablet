@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { useToast } from '../context/ToastContext';
@@ -39,13 +39,13 @@ const BranchManager: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingId) {
-      updateBranch(editingId, formState);
+      await updateBranch(editingId, formState);
       showToast('Filial muvaffaqiyatli yangilandi');
     } else {
-      addBranch(formState);
+      await addBranch(formState);
       showToast('Yangi filial qo\'shildi');
     }
     setIsModalOpen(false);
@@ -83,7 +83,7 @@ const BranchManager: React.FC = () => {
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                    <button onClick={() => openModal(branch)} className="p-2.5 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-xl transition-colors"><Edit2 size={18}/></button>
-                   <button onClick={() => {if(window.confirm('Aniqmi?')) deleteBranch(branch.id)}} className="p-2.5 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-xl transition-colors"><Trash2 size={18}/></button>
+                   <button onClick={() => deleteBranch(branch.id)} className="p-2.5 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-xl transition-colors"><Trash2 size={18}/></button>
                 </div>
              </div>
              
@@ -116,7 +116,6 @@ const BranchManager: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Filialni Tahrirlash' : 'Yangi Filial Yaratish'}>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col md:flex-row gap-6">
-             {/* Logo Preview & Upload */}
              <div className="flex flex-col gap-3 shrink-0 items-center md:items-start">
                 <div className="w-32 h-32 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 relative group">
                     {formState.logoUrl ? (
@@ -125,7 +124,6 @@ const BranchManager: React.FC = () => {
                         <ImageIcon className="text-gray-400 w-10 h-10" />
                     )}
                     
-                    {/* File Input Overlay */}
                     <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                        <Upload size={24} />
                        <span className="text-xs font-bold mt-1">Fayl yuklash</span>
@@ -135,7 +133,6 @@ const BranchManager: React.FC = () => {
                 <p className="text-xs text-gray-400 text-center md:text-left">Fayl yuklang yoki<br/>pastga URL yozing</p>
              </div>
 
-             {/* Inputs */}
              <div className="flex-1 space-y-4 w-full">
                 <Input label="Nomi" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} placeholder="Filial nomi" required />
                 <Input label="Logo Linki (URL)" value={formState.logoUrl} onChange={e => setFormState({...formState, logoUrl: e.target.value})} placeholder="https://..." icon={LinkIcon} />
@@ -183,21 +180,11 @@ const MenuManager: React.FC = () => {
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   const [draggedDishId, setDraggedDishId] = useState<string | null>(null);
 
-  // Modals
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [editingDishId, setEditingDishId] = useState<string | null>(null);
   const [dishForm, setDishForm] = useState<Omit<Dish, 'id'>>({ 
-      categoryId: '', 
-      name: '', 
-      description: '', 
-      price: 0, 
-      imageUrls: [], 
-      isActive: true, 
-      isFeatured: false, 
-      availableBranchIds: [], // Empty means all
-      sortOrder: 0, 
-      variants: [], 
-      badges: [] 
+      categoryId: '', name: '', description: '', price: 0, imageUrls: [], isActive: true, isFeatured: false, 
+      availableBranchIds: [], sortOrder: 0, variants: [], badges: [] 
   });
   const [useVariants, setUseVariants] = useState(false);
   
@@ -207,41 +194,25 @@ const MenuManager: React.FC = () => {
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [catForm, setCatForm] = useState<{name: string, viewType: CategoryViewType}>({ name: '', viewType: 'grid' });
 
-  // Helpers
   const openDishModal = (dish?: Dish) => {
      setImageUrlInput(''); 
      setBadgeUrlInput('');
      if (dish) {
        setEditingDishId(dish.id);
-       setDishForm({ 
-           ...dish, 
-           variants: dish.variants || [], 
-           isFeatured: !!dish.isFeatured, 
-           badges: dish.badges || [],
-           availableBranchIds: dish.availableBranchIds || []
-        });
+       setDishForm({ ...dish, variants: dish.variants || [], isFeatured: !!dish.isFeatured, badges: dish.badges || [], availableBranchIds: dish.availableBranchIds || [] });
        setUseVariants(!!(dish.variants && dish.variants.length > 0));
      } else {
        setEditingDishId(null);
        setDishForm({ 
-           categoryId: selectedCatId !== 'all' ? selectedCatId : (categories[0]?.id || ''), 
-           name: '', 
-           description: '', 
-           price: 0, 
-           imageUrls: [], 
-           isActive: true, 
-           isFeatured: false, 
-           availableBranchIds: [],
-           sortOrder: 0, 
-           variants: [], 
-           badges: [] 
+           categoryId: selectedCatId !== 'all' ? selectedCatId : (categories[0]?.id || ''), name: '', description: '', price: 0, 
+           imageUrls: [], isActive: true, isFeatured: false, availableBranchIds: [], sortOrder: 0, variants: [], badges: [] 
         });
        setUseVariants(false);
      }
      setIsDishModalOpen(true);
   };
 
-  const handleDishSubmit = (e: React.FormEvent) => {
+  const handleDishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dishForm.categoryId) return showToast("Kategoriya tanlang!", 'error');
     
@@ -253,8 +224,8 @@ const MenuManager: React.FC = () => {
         payload.price = Math.min(...payload.variants.map(v => v.price)); 
     }
 
-    if (editingDishId) { updateDish(editingDishId, payload); showToast('Taom yangilandi'); }
-    else { addDish(payload); showToast('Yangi taom qo\'shildi'); }
+    if (editingDishId) { await updateDish(editingDishId, payload); showToast('Taom yangilandi'); }
+    else { await addDish(payload); showToast('Yangi taom qo\'shildi'); }
     setIsDishModalOpen(false);
   };
 
@@ -295,33 +266,28 @@ const MenuManager: React.FC = () => {
     : dishes.filter(d => d.categoryId === selectedCatId))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // --- Drag and Drop Logic ---
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedDishId(id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary for drop
+    e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    if (!draggedDishId || draggedDishId === targetId) return;
-    if (selectedCatId === 'all') return; // Should not happen due to UI check
+    if (!draggedDishId || draggedDishId === targetId || selectedCatId === 'all') return;
 
     const currentList = [...filteredDishes];
     const fromIndex = currentList.findIndex(d => d.id === draggedDishId);
     const toIndex = currentList.findIndex(d => d.id === targetId);
-
     if (fromIndex < 0 || toIndex < 0) return;
 
-    // Move item
     const [movedItem] = currentList.splice(fromIndex, 1);
     currentList.splice(toIndex, 0, movedItem);
 
-    // Update sortOrder for all items
     const updated = currentList.map((d, i) => ({ ...d, sortOrder: i + 1 }));
     
     reorderDishes(updated);
@@ -331,7 +297,6 @@ const MenuManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
       <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-4 items-center sticky top-0 z-10 backdrop-blur-xl bg-white/80">
          <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
             <button onClick={() => setActiveTab('dishes')} className={`flex-1 md:w-32 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'dishes' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>Taomlar</button>
@@ -356,7 +321,6 @@ const MenuManager: React.FC = () => {
          </Button>
       </div>
 
-      {/* Content Area */}
       {activeTab === 'dishes' ? (
          <>
          {selectedCatId === 'all' ? (
@@ -390,7 +354,6 @@ const MenuManager: React.FC = () => {
                   onDrop={(e) => handleDrop(e, dish.id)}
                   className={`group bg-white rounded-3xl p-4 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex gap-4 relative overflow-hidden ${dish.isFeatured ? 'lg:col-span-2' : ''} ${draggedDishId === dish.id ? 'opacity-50 border-orange-400 border-2 scale-95' : 'border-gray-100'} ${selectedCatId !== 'all' ? 'cursor-grab active:cursor-grabbing' : ''}`}
                >
-                  {/* Grip Icon for Draggable Indicator */}
                   {selectedCatId !== 'all' && (
                       <div className="absolute top-0 left-0 z-20 p-2 text-white/80 hover:text-white transition-colors drop-shadow-md" title="Surish uchun ushlang">
                           <GripVertical size={20} />
@@ -414,7 +377,6 @@ const MenuManager: React.FC = () => {
                         </div>
                      )}
 
-                     {/* Hover Sort Controls (Alternative to DnD) */}
                      {selectedCatId !== 'all' && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20 backdrop-blur-[1px]">
                             <button 
@@ -457,7 +419,6 @@ const MenuManager: React.FC = () => {
                            )}
                         </div>
                         
-                        {/* Branch Info Icon */}
                         <div className="text-xs text-gray-400 flex items-center gap-1" title={!dish.availableBranchIds?.length ? "Barcha filiallarda" : "Cheklangan filiallar"}>
                             {!dish.availableBranchIds || dish.availableBranchIds.length === 0 ? (
                                 <div className="flex items-center gap-1 text-gray-300">
@@ -472,7 +433,6 @@ const MenuManager: React.FC = () => {
                      </div>
                   </div>
 
-                  {/* Actions Overlay */}
                   <div className="absolute right-2 top-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 bg-white/90 backdrop-blur-sm p-1 rounded-xl z-30 shadow-sm">
                      <button onClick={() => updateDish(dish.id, { isActive: !dish.isActive })} className={`p-2 rounded-xl border shadow-sm transition-colors ${dish.isActive ? 'bg-white text-gray-400 hover:text-blue-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                         {dish.isActive ? <CheckCircle size={18}/> : <XCircle size={18}/>}
@@ -501,7 +461,7 @@ const MenuManager: React.FC = () => {
                      <button onClick={() => updateCategory(cat.id, { viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">
                         {cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}
                      </button>
-                     <button onClick={() => {if(confirm('O\'chirilsinmi?')) deleteCategory(cat.id)}} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+                     <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
                         <Trash2 size={18}/>
                      </button>
                   </div>
@@ -510,11 +470,10 @@ const MenuManager: React.FC = () => {
          </div>
       )}
 
-      {/* Category Modal */}
       <Modal isOpen={isCatModalOpen} onClose={() => setIsCatModalOpen(false)} title="Yangi Kategoriya">
-         <form onSubmit={(e) => {
+         <form onSubmit={async (e) => {
             e.preventDefault();
-            if(catForm.name.trim()) { addCategory(catForm.name, catForm.viewType); setCatForm({name:'', viewType:'grid'}); setIsCatModalOpen(false); showToast('Qo\'shildi'); }
+            if(catForm.name.trim()) { await addCategory(catForm.name, catForm.viewType); setCatForm({name:'', viewType:'grid'}); setIsCatModalOpen(false); showToast('Qo\'shildi'); }
          }} className="space-y-6">
             <Input label="Nomi" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} placeholder="Masalan: Shirinliklar" autoFocus />
             
@@ -537,7 +496,6 @@ const MenuManager: React.FC = () => {
          </form>
       </Modal>
 
-      {/* Dish Modal */}
       <Modal isOpen={isDishModalOpen} onClose={() => setIsDishModalOpen(false)} title={editingDishId ? 'Taomni Tahrirlash' : 'Yangi Taom Qo\'shish'}>
          <form onSubmit={handleDishSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-6">
@@ -562,7 +520,6 @@ const MenuManager: React.FC = () => {
                   <TextArea label="Tavsif" value={dishForm.description} onChange={e => setDishForm({...dishForm, description: e.target.value})} placeholder="Tarkibi va o'ziga xosligi..." rows={3} />
                </div>
 
-               {/* Branch Availability */}
                <div className="col-span-2 bg-gray-50 rounded-2xl p-5 border border-gray-100">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                        <Store size={14} /> Filiallarda Mavjudligi
@@ -593,7 +550,6 @@ const MenuManager: React.FC = () => {
                    <p className="text-xs text-gray-400 mt-2">* Agar "Barchasida" tanlansa, kelajakda qo'shiladigan filiallarda ham ko'rinadi.</p>
                </div>
 
-               {/* View Options */}
                <div className="col-span-2">
                    <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
                         <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center ${dishForm.isFeatured ? 'bg-orange-500 border-orange-500' : 'border-gray-300 bg-white'}`}>
@@ -610,7 +566,6 @@ const MenuManager: React.FC = () => {
                    </label>
                </div>
 
-               {/* Badges / Icons Section */}
                <div className="col-span-2 bg-gray-50 rounded-2xl p-5 border border-gray-100">
                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
                        <Tag size={14} /> Taom belgilari (Ikonkalar)
@@ -649,7 +604,6 @@ const MenuManager: React.FC = () => {
                    )}
                </div>
 
-               {/* Price / Variants Toggle */}
                <div className="col-span-2 bg-gray-50 rounded-2xl p-5 border border-gray-100">
                   <div className="flex justify-between items-center mb-4">
                      <span className="font-bold text-gray-800 flex items-center gap-2"><Layers size={18} className="text-orange-500"/> Narx turi</span>
@@ -680,11 +634,9 @@ const MenuManager: React.FC = () => {
                   )}
                </div>
 
-               {/* Image Upload */}
                <div className="col-span-2">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-2">Rasmlar</label>
                   
-                  {/* Add via Link Section */}
                   <div className="flex gap-2 mb-4">
                      <div className="flex-1">
                         <Input 
@@ -708,7 +660,6 @@ const MenuManager: React.FC = () => {
                         </div>
                      ))}
                      
-                     {/* File Upload Button */}
                      <label className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-orange-500 hover:text-orange-500 hover:bg-orange-50 transition-all cursor-pointer">
                         <Upload size={24} />
                         <span className="text-[10px] font-bold mt-1">Fayl Yuklash</span>
@@ -755,7 +706,13 @@ const SettingsManager: React.FC = () => {
    const { branding, updateBranding } = useStore();
    const { showToast } = useToast();
    const [localBrand, setLocalBrand] = useState(branding);
+
+   useEffect(() => {
+    setLocalBrand(branding);
+   }, [branding]);
    
+   if (!localBrand) return <div>Loading settings...</div>;
+
    return (
       <div className="max-w-4xl mx-auto">
          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 mb-6">
@@ -775,7 +732,6 @@ const SettingsManager: React.FC = () => {
             </div>
          </div>
 
-         {/* Background Images Section */}
          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-orange-50 text-orange-600 rounded-xl"><ImageIcon size={24}/></div>
@@ -808,36 +764,11 @@ const SettingsManager: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ColorInput 
-                    label="Asosiy Rang (Primary)" 
-                    description="Tugmalar, urg'u berilgan elementlar" 
-                    value={localBrand.primaryColor} 
-                    onChange={v => setLocalBrand({...localBrand, primaryColor: v})} 
-                />
-                <ColorInput 
-                    label="Fon Rangi" 
-                    description="Ilovaning umumiy foni" 
-                    value={localBrand.backgroundColor} 
-                    onChange={v => setLocalBrand({...localBrand, backgroundColor: v})} 
-                />
-                <ColorInput 
-                    label="Kartochka Rangi" 
-                    description="Menyu kartochkalari va bloklar foni" 
-                    value={localBrand.cardColor} 
-                    onChange={v => setLocalBrand({...localBrand, cardColor: v})} 
-                />
-                <ColorInput 
-                    label="Matn Rangi" 
-                    description="Sarlavha va asosiy matnlar" 
-                    value={localBrand.textColor} 
-                    onChange={v => setLocalBrand({...localBrand, textColor: v})} 
-                />
-                <ColorInput 
-                    label="Yordamchi Matn" 
-                    description="Tavsiflar, sanalar va ikkilamchi matn" 
-                    value={localBrand.mutedColor} GEO:
-                    onChange={v => setLocalBrand({...localBrand, mutedColor: v})} 
-                />
+                <ColorInput label="Asosiy Rang (Primary)" description="Tugmalar, urg'u berilgan elementlar" value={localBrand.primaryColor} onChange={v => setLocalBrand({...localBrand, primaryColor: v})} />
+                <ColorInput label="Fon Rangi" description="Ilovaning umumiy foni" value={localBrand.backgroundColor} onChange={v => setLocalBrand({...localBrand, backgroundColor: v})} />
+                <ColorInput label="Kartochka Rangi" description="Menyu kartochkalari va bloklar foni" value={localBrand.cardColor} onChange={v => setLocalBrand({...localBrand, cardColor: v})} />
+                <ColorInput label="Matn Rangi" description="Sarlavha va asosiy matnlar" value={localBrand.textColor} onChange={v => setLocalBrand({...localBrand, textColor: v})} />
+                <ColorInput label="Yordamchi Matn" description="Tavsiflar, sanalar va ikkilamchi matn" value={localBrand.mutedColor} onChange={v => setLocalBrand({...localBrand, mutedColor: v})} />
             </div>
 
             <div className="pt-8 mt-4 border-t border-gray-100">
@@ -849,8 +780,6 @@ const SettingsManager: React.FC = () => {
       </div>
    );
 };
-
-// --- Main Layout ---
 
 const SidebarItem: React.FC<{ icon: any; label: string; active: boolean; onClick: () => void }> = ({ icon: Icon, label, active, onClick }) => (
   <button 
@@ -864,7 +793,6 @@ const SidebarItem: React.FC<{ icon: any; label: string; active: boolean; onClick
   </button>
 );
 
-// Dashboard Stats Component
 const DashboardStats: React.FC = () => {
     const { branches, dishes, categories } = useStore();
     
@@ -882,45 +810,27 @@ const DashboardStats: React.FC = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slideIn">
-            <StatCard 
-                label="Jami Filiallar" 
-                value={branches.length} 
-                icon={Store} 
-                bgClass="bg-blue-50" 
-                colorClass="text-blue-600" 
-            />
-            <StatCard 
-                label="Aktiv Taomlar" 
-                value={dishes.length} 
-                icon={UtensilsCrossed} 
-                bgClass="bg-orange-50" 
-                colorClass="text-orange-600" 
-            />
-            <StatCard 
-                label="Kategoriyalar" 
-                value={categories.length} 
-                icon={ShoppingBag} 
-                bgClass="bg-emerald-50" 
-                colorClass="text-emerald-600" 
-            />
+            <StatCard label="Jami Filiallar" value={branches.length} icon={Store} bgClass="bg-blue-50" colorClass="text-blue-600" />
+            <StatCard label="Aktiv Taomlar" value={dishes.length} icon={UtensilsCrossed} bgClass="bg-orange-50" colorClass="text-orange-600" />
+            <StatCard label="Kategoriyalar" value={categories.length} icon={ShoppingBag} bgClass="bg-emerald-50" colorClass="text-emerald-600" />
         </div>
     );
 };
 
 const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'branches' | 'menu' | 'settings'>('branches');
-  const { branding, dispatch } = useStore();
+  const { branding, signOut } = useStore();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    dispatch({ type: 'USER_SIGNOUT' });
-    localStorage.removeItem('userInfo');
+    signOut();
     navigate('/admin/login');
   };
 
+  if (!branding) return <div>Loading...</div>;
+
   return (
     <div className="flex h-screen bg-[#F8F9FC] font-sans text-gray-900 overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-72 bg-white flex flex-col border-r border-gray-100 z-20 hidden lg:flex shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
          <div className="p-8">
             <div className="flex items-center gap-3 mb-10">
@@ -952,9 +862,7 @@ const AdminDashboard: React.FC = () => {
          </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
-         {/* Mobile Header */}
          <header className="bg-white/80 backdrop-blur border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-30 lg:hidden">
             <div className="flex items-center gap-2">
                <ChefHat className="text-orange-500" />
@@ -992,7 +900,6 @@ const AdminDashboard: React.FC = () => {
                   </div>
                </div>
 
-               {/* Add Stats Dashboard */}
                <DashboardStats />
 
                <div className="animate-slideIn">

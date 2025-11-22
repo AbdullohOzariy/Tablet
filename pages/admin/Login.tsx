@@ -1,24 +1,22 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store } from '../../context/StoreContext';
+import { useStore } from '../../context/StoreContext';
 import { useToast } from '../../context/ToastContext';
 import { ChefHat, ArrowLeft } from 'lucide-react';
-import { Button, Input } from '../../components/ui'; // Assuming you have a UI component library
+import { Button, Input } from '../../components/ui';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { dispatch } = useContext(Store);
+  const { signIn } = useStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd have an API call here
     if (username === 'admin' && password === 'admin') {
       const userInfo = { name: 'Admin', username: 'admin' };
-      dispatch({ type: 'USER_SIGNIN', payload: userInfo });
-      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      signIn(userInfo);
       showToast('Xush kelibsiz, Boss!', 'success');
       navigate('/admin');
     } else {
