@@ -41,8 +41,12 @@ const BranchManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingId) {
-        await updateBranch(editingId, formState);
-        showToast('Filial muvaffaqiyatli yangilandi');
+        // We need to pass the full branch object to updateBranch now
+        const originalBranch = branches.find(b => b.id === editingId);
+        if (originalBranch) {
+            await updateBranch(editingId, { ...originalBranch, ...formState });
+            showToast('Filial muvaffaqiyatli yangilandi');
+        }
       } else {
         await addBranch(formState);
         showToast('Yangi filial qo\'shildi');
@@ -200,8 +204,16 @@ const MenuManager: React.FC = () => {
             payload.price = Math.min(...payload.variants.map(v => v.price)); 
         }
 
-        if (editingDishId) { await updateDish(editingDishId, payload); showToast('Taom yangilandi'); }
-        else { await addDish(payload); showToast('Yangi taom qo\'shildi'); }
+        if (editingDishId) {
+            const originalDish = dishes.find(d => d.id === editingDishId);
+            if (originalDish) {
+                await updateDish(editingDishId, { ...originalDish, ...payload });
+                showToast('Taom yangilandi');
+            }
+        } else { 
+            await addDish(payload); 
+            showToast('Yangi taom qo\'shildi'); 
+        }
         setIsDishModalOpen(false);
     } catch (error) {
         showToast('Xatolik yuz berdi!', 'error');
@@ -287,7 +299,7 @@ const MenuManager: React.FC = () => {
                      </div>
                   </div>
                   <div className="absolute right-2 top-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 bg-white/90 backdrop-blur-sm p-1 rounded-xl z-30 shadow-sm">
-                     <button onClick={() => updateDish(dish.id, { isActive: !dish.isActive })} className={`p-2 rounded-xl border shadow-sm transition-colors ${dish.isActive ? 'bg-white text-gray-400 hover:text-blue-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{dish.isActive ? <CheckCircle size={18}/> : <XCircle size={18}/>}</button>
+                     <button onClick={() => updateDish(dish.id, { ...dish, isActive: !dish.isActive })} className={`p-2 rounded-xl border shadow-sm transition-colors ${dish.isActive ? 'bg-white text-gray-400 hover:text-blue-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{dish.isActive ? <CheckCircle size={18}/> : <XCircle size={18}/>}</button>
                      <button onClick={() => openDishModal(dish)} className="p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-orange-500 hover:border-orange-200 transition-colors"><Edit2 size={18}/></button>
                      <button onClick={() => deleteDish(dish.id)} className="p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"><Trash2 size={18}/></button>
                   </div>
@@ -300,11 +312,11 @@ const MenuManager: React.FC = () => {
             {categories.sort((a,b) => a.sortOrder - b.sortOrder).map(cat => (
                <div key={cat.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-orange-200 hover:shadow-md transition-all">
                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">{cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/>}</div>
+                     <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">{cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/></div>
                      <div><h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3><span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat ko'rinishida" : "Kartochka ko'rinishida"}</span></div>
                   </div>
                   <div className="flex gap-2">
-                     <button onClick={() => updateCategory(cat.id, { viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">{cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}</button>
+                     <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">{cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}</button>
                      <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 size={18}/></button>
                   </div>
                </div>
