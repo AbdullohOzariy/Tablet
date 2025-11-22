@@ -1,4 +1,9 @@
 
+export interface UserInfo {
+  name: string;
+  username: string;
+}
+
 export interface Branch {
   id: string;
   name: string;

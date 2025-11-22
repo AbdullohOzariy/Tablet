@@ -1,11 +1,16 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Branch, Dish } from '../types';
 import { MapPin, Phone, Info, ChevronRight, ArrowLeft, Home, Clock, Search, Utensils, Sparkles } from 'lucide-react';
 
-// --- Branch Selector (Welcome Screen) ---
+const LoadingScreen: React.FC = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+    <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+    <p className="mt-4 text-lg font-semibold text-gray-700">Ma'lumotlar yuklanmoqda...</p>
+  </div>
+);
+
 const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect }) => {
   const { branches, branding } = useStore();
   const navigate = useNavigate();
@@ -16,7 +21,8 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
     }
   }, [branches, onSelect]);
 
-  // Dynamic Styles
+  if (!branding) return null; // Branding yuklanmagan bo'lsa, hech narsa ko'rsatma
+
   const bgStyle = { backgroundColor: branding.backgroundColor };
   const cardStyle = { backgroundColor: branding.cardColor, borderColor: 'transparent' };
   const textStyle = { color: branding.textColor };
@@ -24,7 +30,6 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={bgStyle}>
-      {/* Decorative Background */}
       <div className="absolute top-0 left-0 w-full h-[50vh] z-0" style={{ backgroundColor: branding.textColor }}>
          <div 
             className="absolute inset-0 opacity-30 bg-cover bg-center transition-all duration-700" 
@@ -33,7 +38,6 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-current" style={{ color: branding.backgroundColor }} />
       </div>
 
-      {/* Header Content */}
       <div className="relative z-10 flex-1 flex flex-col items-center px-6 pt-16 pb-6 max-w-6xl mx-auto w-full">
         <button 
           onClick={() => navigate('/')}
@@ -51,12 +55,10 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
                onError={(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=Logo'}
              />
           </div>
-          {/* Inverse text color for header area as it sits on dark bg/image */}
           <h1 className="text-4xl md:text-6xl font-black mb-3 drop-shadow-sm tracking-tight mix-blend-overlay" style={{ color: branding.backgroundColor }}>{branding.restaurantName}</h1>
           <p className="text-lg md:text-xl font-medium opacity-80" style={{ color: branding.backgroundColor }}>Xush kelibsiz! Iltimos, filialni tanlang</p>
         </div>
 
-        {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-slideIn" style={{ animationDelay: '0.1s' }}>
           {branches.map((branch) => {
             const themeColor = branch.customColor || branding.primaryColor;
@@ -113,52 +115,33 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
   );
 };
 
-// --- Menu Viewer (Main Interface) ---
 const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, onBack }) => {
   const { categories, getDishesByCategory, branding, branches } = useStore();
   const navigate = useNavigate();
-  const [activeCategoryId, setActiveCategoryId] = useState<string>(categories[0]?.id || '');
+  const [activeCategoryId, setActiveCategoryId] = useState<string>('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const categoryScrollRef = useRef<HTMLDivElement>(null);
-  const [scrolled, setScrolled] = useState(false);
+  
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategoryId) {
+      setActiveCategoryId(categories[0].id);
+    }
+  }, [categories, activeCategoryId]);
+
+  if (!branding || !activeCategoryId) return null;
 
   const themeColor = branch.customColor || branding.primaryColor;
   const isSingleBranch = branches.length <= 1;
 
-  // Dynamic Branding Styles
   const bgStyle = { backgroundColor: branding.backgroundColor };
   const cardStyle = { backgroundColor: branding.cardColor };
   const textStyle = { color: branding.textColor };
   const mutedStyle = { color: branding.mutedColor };
 
-  // Handle scroll for sticky header effect
-  useEffect(() => {
-    const handleScroll = () => {
-        if (scrollContainerRef.current) {
-            setScrolled(scrollContainerRef.current.scrollTop > 50);
-        }
-    };
-    const el = scrollContainerRef.current;
-    el?.addEventListener('scroll', handleScroll);
-    return () => el?.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Auto-select first category
-  useEffect(() => {
-    if (!activeCategoryId && categories.length > 0) {
-      setActiveCategoryId(categories[0].id);
-    }
-  }, [categories, activeCategoryId]);
-
-  // Scroll to top when category changes
   const handleCategoryClick = (catId: string) => {
     setActiveCategoryId(catId);
     if(scrollContainerRef.current) {
-        // Smooth scroll to content start
-        const heroHeight = 200; // Approx height of hero section
-        const currentScroll = scrollContainerRef.current.scrollTop;
-        
-        if (currentScroll > heroHeight) {
+        const heroHeight = 200;
+        if (scrollContainerRef.current.scrollTop > heroHeight) {
              scrollContainerRef.current.scrollTo({ top: heroHeight, behavior: 'smooth' });
         }
     }
@@ -166,12 +149,8 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
 
   const activeCategory = categories.find(c => c.id === activeCategoryId);
   
-  // --- BRANCH FILTERING LOGIC ---
   const activeDishes = getDishesByCategory(activeCategoryId)
-    .filter(d => d.isActive)
     .filter(d => {
-        // If availableBranchIds is empty/undefined, it is available everywhere.
-        // Otherwise, the current branch ID must be in the list.
         if (!d.availableBranchIds || d.availableBranchIds.length === 0) return true;
         return d.availableBranchIds.includes(branch.id);
     });
@@ -181,7 +160,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
   return (
     <div className="flex flex-col h-screen font-sans overflow-hidden" style={bgStyle}>
       
-      {/* Fixed Header Bar */}
       <div className={`z-40 transition-all duration-300 border-b border-white/10`} style={{ backgroundColor: branding.cardColor }}>
         <div className="px-6 py-3 flex items-center justify-between">
            <div className="flex items-center gap-4">
@@ -195,7 +173,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                  </button>
               )}
 
-              {/* Logo & Info */}
               <div className="flex items-center gap-3 pl-2 border-l" style={{ borderColor: branding.backgroundColor }}>
                   <div className="w-10 h-10 rounded-full overflow-hidden border" style={{ borderColor: branding.backgroundColor, backgroundColor: branding.backgroundColor }}>
                      <img src={branch.logoUrl || branding.logoUrl} alt="Logo" className="w-full h-full object-cover" />
@@ -207,7 +184,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
               </div>
            </div>
 
-           {/* Time */}
            <div className="px-4 py-2 rounded-full flex items-center gap-2 border border-transparent" style={{ backgroundColor: branding.backgroundColor }}>
               <Clock size={16} style={{ color: themeColor }}/>
               <span className="text-sm font-bold tabular-nums" style={textStyle}>
@@ -217,10 +193,8 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
         </div>
       </div>
 
-      {/* Scrollable Area */}
       <div className="flex-1 overflow-y-auto relative" ref={scrollContainerRef}>
          
-         {/* Hero Banner */}
          <div className="relative w-full h-64 md:h-72 overflow-hidden shrink-0" style={{ backgroundColor: branding.textColor }}>
              <img 
                 src={branding.headerImageUrl} 
@@ -241,9 +215,8 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
              </div>
          </div>
 
-         {/* Sticky Category Navigation */}
          <div className="sticky top-0 z-30 pt-4 pb-4 px-6 shadow-sm" style={{ backgroundColor: branding.backgroundColor, opacity: 0.98 }}>
-             <div className="max-w-[1600px] mx-auto" ref={categoryScrollRef}>
+             <div className="max-w-[1600px] mx-auto">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                     {categories.sort((a, b) => a.sortOrder - b.sortOrder).map(cat => {
                         const isActive = activeCategoryId === cat.id;
@@ -266,7 +239,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
              </div>
          </div>
 
-         {/* Main Content (Dish Grid/List) */}
          <div className="max-w-[1600px] mx-auto px-6 pt-8 pb-32">
             <div className="mb-6">
                 <h3 className="text-3xl font-black flex items-center gap-3" style={textStyle}>
@@ -287,18 +259,15 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                </div>
             ) : (
                <>
-                {/* --- LIST VIEW RENDERER (PREMIUM) --- */}
                 {isListView ? (
                    <div className="max-w-6xl mx-auto animate-slideIn">
                       <div className="rounded-[2.5rem] shadow-xl shadow-black/5 overflow-hidden relative" style={cardStyle}>
-                         {/* Header decorative line */}
                         <div className="h-1.5 w-full" style={{ backgroundColor: themeColor }}></div>
                         
                         <div className="p-2 md:p-4 space-y-1">
-                            {activeDishes.map((dish, index) => (
+                            {activeDishes.map((dish) => (
                                 <div key={dish.id} className="group relative p-4 md:p-5 rounded-2xl transition-all duration-200 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8 hover:bg-black/5">
                                     
-                                    {/* Image (Optional) */}
                                     {dish.imageUrls && dish.imageUrls.length > 0 ? (
                                         <div className="hidden md:block shrink-0 w-20 h-20 rounded-2xl overflow-hidden shadow-sm group-hover:shadow-md transition-all" style={{ backgroundColor: branding.backgroundColor }}>
                                             <img src={dish.imageUrls[0]} alt={dish.name} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
@@ -309,13 +278,11 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                                         </div>
                                     )}
 
-                                    {/* Content */}
                                     <div className="flex-1 w-full min-w-0 flex flex-col justify-center h-full py-1">
                                         <div className="flex items-center w-full gap-3">
                                             <h3 className="text-xl md:text-2xl font-bold leading-tight" style={textStyle}>
                                                 {dish.name}
                                             </h3>
-                                            {/* Badges in List View */}
                                             {dish.badges && dish.badges.length > 0 && (
                                                 <div className="flex items-center gap-1">
                                                     {dish.badges.map((badgeUrl, bIdx) => (
@@ -323,7 +290,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                                                     ))}
                                                 </div>
                                             )}
-                                            {/* Dot Leader */}
                                             <div className="flex-1 mx-4 border-b-2 border-dotted relative top-[-6px] opacity-30 hidden md:block" style={{ borderColor: branding.mutedColor }}></div>
                                         </div>
                                         
@@ -332,7 +298,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                                         )}
                                     </div>
 
-                                    {/* Price/Variants Section */}
                                     <div className="w-full md:w-auto flex flex-col justify-end items-end shrink-0">
                                         {dish.variants && dish.variants.length > 0 ? (
                                             <div className="flex flex-wrap justify-end gap-2 w-full">
@@ -366,7 +331,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                       </div>
                    </div>
                 ) : (
-                   /* --- GRID VIEW RENDERER (CARD PREMIUM) --- */
                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                       {activeDishes.map((dish, index) => (
                          <div 
@@ -374,7 +338,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                             className={`group relative rounded-[2.5rem] p-4 shadow-lg shadow-black/5 border border-transparent hover:shadow-2xl flex flex-col h-full animate-slideIn transition-transform duration-300 hover:-translate-y-2 ${dish.isFeatured ? 'md:col-span-2' : ''}`}
                             style={{ backgroundColor: branding.cardColor, animationDelay: `${index * 0.05}s` }}
                          >
-                            {/* Image Area */}
                             <div className={`relative w-full ${dish.isFeatured ? 'aspect-[9/4]' : 'aspect-[5/3]'} rounded-[2rem] overflow-hidden mb-5 shadow-inner`} style={{ backgroundColor: branding.backgroundColor }}>
                                <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
                                   {dish.imageUrls.length > 0 ? (
@@ -395,7 +358,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                                   )}
                                </div>
                                
-                               {/* Badges Overlay in Image */}
                                {dish.badges && dish.badges.length > 0 && (
                                    <div className="absolute bottom-3 left-3 flex gap-2 z-10">
                                        {dish.badges.map((badgeUrl, bIdx) => (
@@ -418,7 +380,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                                   {dish.description || "Mazali taom, albatta tatib ko'ring!"}
                                </p>
                                
-                               {/* Variants / Price Block */}
                                <div className="mt-auto">
                                   {dish.variants && dish.variants.length > 0 ? (
                                      <div className={`space-y-2 pt-4 border-t border-dashed ${dish.isFeatured ? 'grid grid-cols-2 gap-3 space-y-0' : ''}`} style={{ borderColor: branding.backgroundColor }}>
@@ -457,7 +418,12 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
 };
 
 const CustomerApp: React.FC = () => {
+  const { loading } = useStore();
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   if (selectedBranch) {
     return <MenuViewer branch={selectedBranch} onBack={() => setSelectedBranch(null)} />;
