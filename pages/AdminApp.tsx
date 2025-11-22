@@ -480,8 +480,22 @@ const SettingsManager: React.FC = () => {
                <div className="w-24 h-24 rounded-full bg-gray-100 border-4 border-white shadow-lg overflow-hidden shrink-0"><img src={localBrand.logoUrl} className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/150?text=Logo'} /></div>
                <div><h2 className="text-2xl font-black text-gray-900">Brending</h2><p className="text-gray-500">Mijoz ilovasi dizaynini o'zgartirish</p></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><Input label="Restoran Nomi" value={localBrand.restaurantName} onChange={e => setLocalBrand({...localBrand, restaurantName: e.target.value})} /><Input label="Logo URL" value={localBrand.logoUrl} onChange={e => setLocalBrand({...localBrand, logoUrl: e.target.value})} icon={LinkIcon} /></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <Input label="Restoran Nomi" value={localBrand.restaurantName} onChange={e => setLocalBrand({...localBrand, restaurantName: e.target.value})} />
+               <Input label="Logo URL" value={localBrand.logoUrl} onChange={e => setLocalBrand({...localBrand, logoUrl: e.target.value})} icon={LinkIcon} />
+               <TextArea label="Kirish Sarlavhasi (Landing Page)" value={localBrand.slogan || ''} onChange={e => setLocalBrand({...localBrand, slogan: e.target.value})} rows={2} className="md:col-span-2" />
+            </div>
          </div>
+
+         <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 mb-6">
+            <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Type size={24}/></div><h3 className="text-xl font-bold text-gray-900">Mijozlar Paneli Matnlari</h3></div>
+            <div className="space-y-4">
+                <Input label="Filial Tanlash Xabari" value={localBrand.welcomeMessage || ''} onChange={e => setLocalBrand({...localBrand, welcomeMessage: e.target.value})} />
+                <Input label="Menyu Banner Sarlavhasi" value={localBrand.menuHeroTitle || ''} onChange={e => setLocalBrand({...localBrand, menuHeroTitle: e.target.value})} />
+                <TextArea label="Menyu Banner Matni" value={localBrand.menuHeroSubtitle || ''} onChange={e => setLocalBrand({...localBrand, menuHeroSubtitle: e.target.value})} rows={3} />
+            </div>
+         </div>
+
          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100 mb-6">
             <div className="flex items-center gap-3 mb-6"><div className="p-2 bg-orange-50 text-orange-600 rounded-xl"><ImageIcon size={24}/></div><h3 className="text-xl font-bold text-gray-900">Fon va Banner Rasmlari</h3></div>
             <div className="space-y-6"><Input label="Asosiy Fon Rasmi (Welcome Screen)" value={localBrand.backgroundImageUrl || ''} onChange={e => setLocalBrand({...localBrand, backgroundImageUrl: e.target.value})} placeholder="https://..." icon={LinkIcon}/><Input label="Menyu Banner Rasmi (Header)" value={localBrand.headerImageUrl || ''} onChange={e => setLocalBrand({...localBrand, headerImageUrl: e.target.value})} placeholder="https://..." icon={LinkIcon}/></div>

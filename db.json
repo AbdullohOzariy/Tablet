@@ -5,6 +5,9 @@
     "logoUrl": "https://picsum.photos/id/1060/200/200",
     "backgroundImageUrl": "https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1000&auto=format&fit=crop",
     "headerImageUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2000&auto=format&fit=crop",
+    "welcomeMessage": "Xush kelibsiz! Iltimos, filialni tanlang",
+    "menuHeroTitle": "Ta'm va Lazzzat",
+    "menuHeroSubtitle": "Bizning maxsus taomlarimizdan bahramand bo'ling. Faqat yangi masalliqlar va sevimli retseptlar.",
     "primaryColor": "#F97316",
     "backgroundColor": "#F8F9FC",
     "cardColor": "#FFFFFF",
@@ -32,24 +35,5 @@
     { "id": "cat-3", "name": "Salatlar", "sortOrder": 3, "viewType": "grid" },
     { "id": "cat-4", "name": "Ichimliklar", "sortOrder": 4, "viewType": "list" }
   ],
-  "dishes": [
-    {
-      "id": "d-1",
-      "categoryId": "cat-1",
-      "name": "To'y Oshi (Maxsus)",
-      "description": "An'anaviy to'y oshi, mol go'shti, qazi va bedana tuxum bilan. Katta laganda.",
-      "price": 45000,
-      "imageUrls": ["https://picsum.photos/seed/palov/800/400", "https://picsum.photos/seed/palov2/600/400"],
-      "variants": [
-        { "name": "0.7 Portsiya", "price": 35000 },
-        { "name": "1 Portsiya", "price": 45000 },
-        { "name": "1.5 Portsiya (Double)", "price": 65000 }
-      ],
-      "badges": ["https://cdn-icons-png.flaticon.com/128/6469/6469034.png", "https://cdn-icons-png.flaticon.com/128/2396/2396713.png"],
-      "isActive": true,
-      "isFeatured": true,
-      "availableBranchIds": [],
-      "sortOrder": 1
-    }
-  ]
+  "dishes": []
 }

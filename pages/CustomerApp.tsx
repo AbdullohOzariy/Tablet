@@ -21,7 +21,7 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
     }
   }, [branches, onSelect]);
 
-  if (!branding) return null; // Branding yuklanmagan bo'lsa, hech narsa ko'rsatma
+  if (!branding) return null;
 
   const bgStyle = { backgroundColor: branding.backgroundColor };
   const cardStyle = { backgroundColor: branding.cardColor, borderColor: 'transparent' };
@@ -56,7 +56,7 @@ const BranchSelector: React.FC<{ onSelect: (b: Branch) => void }> = ({ onSelect 
              />
           </div>
           <h1 className="text-4xl md:text-6xl font-black mb-3 drop-shadow-sm tracking-tight mix-blend-overlay" style={{ color: branding.backgroundColor }}>{branding.restaurantName}</h1>
-          <p className="text-lg md:text-xl font-medium opacity-80" style={{ color: branding.backgroundColor }}>Xush kelibsiz! Iltimos, filialni tanlang</p>
+          <p className="text-lg md:text-xl font-medium opacity-80" style={{ color: branding.backgroundColor }}>{branding.welcomeMessage || "Xush kelibsiz! Iltimos, filialni tanlang"}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full animate-slideIn" style={{ animationDelay: '0.1s' }}>
@@ -206,10 +206,10 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
              <div className="absolute bottom-0 left-0 w-full px-8 pb-8 pt-20 bg-gradient-to-t from-black/60 via-transparent to-transparent">
                  <div className="max-w-[1600px] mx-auto">
                     <h2 className="text-4xl md:text-5xl font-black text-white mb-2 drop-shadow-lg">
-                       Ta'm va Lazzzat
+                       {branding.menuHeroTitle || "Ta'm va Lazzzat"}
                     </h2>
                     <p className="text-gray-200 text-lg font-medium max-w-xl drop-shadow-md">
-                       Bizning maxsus taomlarimizdan bahramand bo'ling. Faqat yangi masalliqlar va sevimli retseptlar.
+                       {branding.menuHeroSubtitle || "Bizning maxsus taomlarimizdan bahramand bo'ling. Faqat yangi masalliqlar va sevimli retseptlar."}
                     </p>
                  </div>
              </div>

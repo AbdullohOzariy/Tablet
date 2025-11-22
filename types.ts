@@ -44,10 +44,17 @@ export interface Dish {
 
 export interface Branding {
   restaurantName: string;
-  slogan?: string; // Yangi maydon
+  slogan?: string; 
   logoUrl: string;
   backgroundImageUrl?: string;
   headerImageUrl?: string;
+  
+  // Yangi matnlar
+  welcomeMessage?: string;
+  menuHeroTitle?: string;
+  menuHeroSubtitle?: string;
+
+  // Ranglar
   primaryColor: string;
   backgroundColor: string;
   cardColor: string;
