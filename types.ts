@@ -9,8 +9,8 @@ export interface Branch {
   name: string;
   address: string;
   phone: string;
-  customColor?: string; // Optional override
-  logoUrl?: string; // Optional override
+  customColor?: string;
+  logoUrl?: string;
 }
 
 export type CategoryViewType = 'grid' | 'list';
@@ -19,11 +19,11 @@ export interface Category {
   id: string;
   name: string;
   sortOrder: number;
-  viewType: CategoryViewType; // 'grid' (default) or 'list'
+  viewType: CategoryViewType;
 }
 
 export interface DishVariant {
-  name: string; // e.g. "0.7 portsiya", "Mol go'shtli"
+  name: string;
   price: number;
 }
 
@@ -34,25 +34,25 @@ export interface Dish {
   description: string;
   price: number;
   imageUrls: string[];
-  variants?: DishVariant[]; // New field for portions/types
-  badges?: string[]; // New: Ingredients/Icons URLs (e.g. beef icon, cheese icon)
+  variants?: DishVariant[];
+  badges?: string[];
   isActive: boolean;
-  isFeatured?: boolean; // New: Agar true bo'lsa, gridda 2 ta joy egallaydi (Wide card)
-  availableBranchIds?: string[]; // New: Agar bo'sh bo'lsa, barcha filiallarda ko'rinadi. Aks holda faqat ID lari borlarida.
+  isFeatured?: boolean;
+  availableBranchIds?: string[];
   sortOrder: number;
 }
 
 export interface Branding {
   restaurantName: string;
+  slogan?: string; // Yangi maydon
   logoUrl: string;
-  backgroundImageUrl?: string; // New: Main App Background / Welcome Screen
-  headerImageUrl?: string;     // New: Menu Top Banner
-  // Colors
-  primaryColor: string;      // Buttons, Highlights, Accents
-  backgroundColor: string;   // Main App Background
-  cardColor: string;         // Product Cards / Containers
-  textColor: string;         // Headings, Main Text
-  mutedColor: string;        // Descriptions, Secondary Text
+  backgroundImageUrl?: string;
+  headerImageUrl?: string;
+  primaryColor: string;
+  backgroundColor: string;
+  cardColor: string;
+  textColor: string;
+  mutedColor: string;
 }
 
 export enum ViewMode {

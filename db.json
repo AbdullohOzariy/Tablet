@@ -1,6 +1,7 @@
 {
   "branding": {
     "restaurantName": "Lazzat Milliy Taomlar",
+    "slogan": "Restoran biznesingiz uchun zamonaviy raqamli menyu va boshqaruv tizimi.",
     "logoUrl": "https://picsum.photos/id/1060/200/200",
     "backgroundImageUrl": "https://images.unsplash.com/photo-1559339352-11d035aa65de?q=80&w=1000&auto=format&fit=crop",
     "headerImageUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2000&auto=format&fit=crop",
@@ -49,89 +50,6 @@
       "isFeatured": true,
       "availableBranchIds": [],
       "sortOrder": 1
-    },
-    {
-      "id": "d-2",
-      "categoryId": "cat-1",
-      "name": "Qozon Kabob",
-      "description": "Yumshoq pishirilgan qo'y go'shti va kartoshka.",
-      "price": 65000,
-      "imageUrls": ["https://picsum.photos/seed/qozon/600/400"],
-      "isActive": true,
-      "availableBranchIds": ["br-2"],
-      "sortOrder": 2
-    },
-    {
-      "id": "d-3",
-      "categoryId": "cat-2",
-      "name": "Mastava",
-      "description": "Qatiq bilan tortiladigan guruchli sho'rva.",
-      "price": 30000,
-      "imageUrls": ["https://picsum.photos/seed/mastava/600/400"],
-      "isActive": true,
-      "availableBranchIds": [],
-      "sortOrder": 1
-    },
-    {
-      "id": "d-4",
-      "categoryId": "cat-3",
-      "name": "Achichuk",
-      "description": "Pomidor, piyoz va achchiq qalampir.",
-      "price": 15000,
-      "imageUrls": ["https://picsum.photos/seed/achichuk/600/400"],
-      "badges": ["https://cdn-icons-png.flaticon.com/128/603/603222.png"],
-      "isActive": true,
-      "sortOrder": 1
-    },
-    {
-      "id": "d-5",
-      "categoryId": "cat-4",
-      "name": "Coca-Cola",
-      "description": "Muzdek ichimlik.",
-      "price": 12000,
-      "imageUrls": ["https://picsum.photos/seed/coke/600/400"],
-      "variants": [
-        { "name": "0.5L", "price": 7000 },
-        { "name": "1L", "price": 12000 },
-        { "name": "1.5L", "price": 16000 }
-      ],
-      "isActive": true,
-      "sortOrder": 1
-    },
-    {
-      "id": "d-7",
-      "categoryId": "cat-4",
-      "name": "Fanta",
-      "description": "Apelsin ta'mli gazli ichimlik.",
-      "price": 12000,
-      "imageUrls": ["https://picsum.photos/seed/fanta/600/400"],
-      "variants": [
-        { "name": "0.5L", "price": 7000 },
-        { "name": "1L", "price": 12000 }
-      ],
-      "isActive": true,
-      "sortOrder": 2
-    },
-    {
-      "id": "d-8",
-      "categoryId": "cat-4",
-      "name": "Kompot",
-      "description": "Mevli sharbat (stakan).",
-      "price": 5000,
-      "imageUrls": [],
-      "isActive": true,
-      "sortOrder": 3
-    },
-    {
-      "id": "d-6",
-      "categoryId": "cat-1",
-      "name": "Norin",
-      "description": "Ot go'shtidan tayyorlangan maxsus xamirli taom.",
-      "price": 50000,
-      "imageUrls": ["https://picsum.photos/seed/norin/600/400"],
-      "badges": ["https://cdn-icons-png.flaticon.com/128/1993/1993257.png"],
-      "isActive": false,
-      "sortOrder": 3
     }
   ]
 }
