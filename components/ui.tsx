@@ -1,4 +1,5 @@
 import React from 'react';
+import { X, AlertTriangle } from 'lucide-react';
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'ghost', icon?: any }> = 
   ({ children, className = '', variant = 'primary', icon: Icon, ...props }) => {
@@ -8,7 +9,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   const variants = {
     primary: "bg-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-200",
     secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-transparent",
+    danger: "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-200",
     ghost: "bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900"
   };
 
@@ -57,6 +58,37 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
         </div>
         <div className="p-8">
           {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const ConfirmationModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-slideIn text-center">
+        <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertTriangle size={32} />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+        <p className="text-gray-500 mb-8">{message}</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Button variant="secondary" onClick={onClose}>
+            Bekor qilish
+          </Button>
+          <Button variant="danger" onClick={onConfirm}>
+            Ha, o'chirilsin
+          </Button>
         </div>
       </div>
     </div>
