@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useStore } from '../context/StoreContext';
 import { useToast } from '../context/ToastContext';
 import { Branch, Dish, Category, DishVariant, CategoryViewType } from '../types';
@@ -205,12 +206,11 @@ const BranchManager: React.FC = () => {
 };
 
 const MenuManager: React.FC = () => {
-  const { categories, addCategory, updateCategory, deleteCategory, dishes, addDish, updateDish, deleteDish, moveDish, reorderDishes, branches } = useStore();
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories, dishes, addDish, updateDish, deleteDish, moveDish, reorderDishes, branches } = useStore();
   const { showToast } = useToast();
   
   const [activeTab, setActiveTab] = useState<'dishes' | 'categories'>('dishes');
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
-  const [draggedDishId, setDraggedDishId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
@@ -223,6 +223,22 @@ const MenuManager: React.FC = () => {
 
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
   const [catForm, setCatForm] = useState<{name: string, viewType: CategoryViewType}>({ name: '', viewType: 'grid' });
+
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const newCategories = Array.from(categories);
+    const [reorderedItem] = newCategories.splice(source.index, 1);
+    newCategories.splice(destination.index, 0, reorderedItem);
+
+    const updatedCategories = newCategories.map((cat, index) => ({ ...cat, sortOrder: index }));
+    
+    reorderCategories(updatedCategories).catch(() => {
+        showToast("Tartibni saqlashda xatolik!", "error");
+    });
+  };
 
   const openDishModal = (dish?: Dish) => {
      setImageUrlInput(''); setBadgeUrlInput('');
@@ -255,11 +271,7 @@ const MenuManager: React.FC = () => {
         if (editingDishId) {
             const originalDish = dishes.find(d => d.id === editingDishId);
             if (originalDish) {
-                const dishToUpdate: Dish = {
-                    ...originalDish,
-                    ...payload,
-                    id: editingDishId,
-                };
+                const dishToUpdate: Dish = { ...originalDish, ...payload, id: editingDishId };
                 await updateDish(editingDishId, dishToUpdate);
                 showToast('Taom yangilandi');
             }
@@ -297,21 +309,6 @@ const MenuManager: React.FC = () => {
 
   const filteredDishes = (selectedCatId === 'all' ? dishes : dishes.filter(d => d.categoryId === selectedCatId)).sort((a, b) => a.sortOrder - b.sortOrder);
 
-  const handleDragStart = (e: React.DragEvent, id: string) => { setDraggedDishId(id); e.dataTransfer.effectAllowed = 'move'; };
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
-  const handleDrop = (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (!draggedDishId || draggedDishId === targetId || selectedCatId === 'all') return;
-    const currentList = [...filteredDishes];
-    const fromIndex = currentList.findIndex(d => d.id === draggedDishId);
-    const toIndex = currentList.findIndex(d => d.id === targetId);
-    if (fromIndex < 0 || toIndex < 0) return;
-    const [movedItem] = currentList.splice(fromIndex, 1);
-    currentList.splice(toIndex, 0, movedItem);
-    const updated = currentList.map((d, i) => ({ ...d, sortOrder: i + 1 }));
-    reorderDishes(updated); setDraggedDishId(null); showToast("Tartib yangilandi");
-  };
-
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-4 items-center sticky top-0 z-10 backdrop-blur-xl bg-white/80">
@@ -328,18 +325,14 @@ const MenuManager: React.FC = () => {
          <Button onClick={() => activeTab === 'dishes' ? openDishModal() : setIsCatModalOpen(true)} icon={Plus} className="w-full md:w-auto">{activeTab === 'dishes' ? 'Yangi Taom' : 'Yangi Kategoriya'}</Button>
       </div>
       {activeTab === 'dishes' ? (
-         <>
-         {selectedCatId === 'all' ? <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center gap-3 text-blue-800 animate-slideIn"><Info size={20} /><p className="text-sm font-bold">Diqqat: Taomlarni saralash (Drag & Drop) uchun aniq bir kategoriyani tanlang.</p></div> : <div className="mb-4 p-4 bg-orange-50 border border-orange-100 rounded-2xl flex items-center gap-3 text-orange-800 animate-slideIn"><Hand size={20} className="animate-pulse"/><p className="text-sm font-bold">Sichqoncha bilan ushlab surish orqali tartibni o'zgartiring.</p></div>}
          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredDishes.length === 0 && <div className="col-span-full py-20 text-center"><div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400"><UtensilsCrossed size={32} /></div><h3 className="text-xl font-bold text-gray-800">Taomlar topilmadi</h3><p className="text-gray-500">Yangi taom qo'shing yoki kategoriyani o'zgartiring</p></div>}
             {filteredDishes.map((dish) => (
-               <div key={dish.id} draggable={selectedCatId !== 'all'} onDragStart={(e) => handleDragStart(e, dish.id)} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dish.id)} className={`group bg-white rounded-3xl p-4 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex gap-4 relative overflow-hidden ${dish.isFeatured ? 'lg:col-span-2' : ''} ${draggedDishId === dish.id ? 'opacity-50 border-orange-400 border-2 scale-95' : 'border-gray-100'} ${selectedCatId !== 'all' ? 'cursor-grab active:cursor-grabbing' : ''}`}>
-                  {selectedCatId !== 'all' && <div className="absolute top-0 left-0 z-20 p-2 text-white/80 hover:text-white transition-colors drop-shadow-md" title="Surish uchun ushlang"><GripVertical size={20} /></div>}
+               <div key={dish.id} className={`group bg-white rounded-3xl p-4 border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex gap-4 relative overflow-hidden ${dish.isFeatured ? 'lg:col-span-2' : ''}`}>
                   <div className={`rounded-2xl bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative ${dish.isFeatured ? 'w-48 h-24' : 'w-24 h-24'}`}>
                      {dish.imageUrls[0] ? <img src={dish.imageUrls[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/200?text=No+Img'} /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ChefHat size={24}/></div>}
                      {!dish.isActive && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">Yashirin</span></div>}
                      {dish.isFeatured && <div className="absolute top-1 right-1 bg-orange-500 text-white text-[8px] uppercase font-bold px-1.5 py-0.5 rounded-md z-10 shadow-sm">Katta</div>}
-                     {selectedCatId !== 'all' && <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 z-20 backdrop-blur-[1px]"><button onClick={(e) => { e.stopPropagation(); moveDish(dish.id, 'up'); }} className="p-2 bg-white rounded-full text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all shadow-lg active:scale-90" title="Oldinga"><MoveLeft size={16} /></button><button onClick={(e) => { e.stopPropagation(); moveDish(dish.id, 'down'); }} className="p-2 bg-white rounded-full text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all shadow-lg active:scale-90" title="Orqaga"><MoveRight size={16} /></button></div>}
                   </div>
                   <div className="flex-1 min-w-0 py-1 relative">
                      <div className="flex justify-between items-start pr-12"><h3 className="font-bold text-gray-900 text-lg truncate">{dish.name}</h3></div>
@@ -360,35 +353,48 @@ const MenuManager: React.FC = () => {
                </div>
             ))}
          </div>
-         </>
       ) : (
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.sort((a,b) => a.sortOrder - b.sortOrder).map(cat => {
-                const CategoryIcon = cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/>;
-                const ToggleIcon = cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>;
-                return (
-                    <div key={cat.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-orange-200 hover:shadow-md transition-all">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
-                                {CategoryIcon}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3>
-                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat ko'rinishida" : "Kartochka ko'rinishida"}</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">
-                                {ToggleIcon}
-                            </button>
-                            <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
-                                <Trash2 size={18}/>
-                            </button>
-                        </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="categories">
+                {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                        {categories.map((cat, index) => (
+                            <Draggable key={cat.id} draggableId={cat.id} index={index}>
+                                {(provided) => (
+                                    <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div {...provided.dragHandleProps} className="p-2 cursor-grab text-gray-400 hover:bg-gray-100 rounded-lg">
+                                                <GripVertical size={20} />
+                                            </div>
+                                            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                                                {cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/>}
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3>
+                                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat" : "Kartochka"}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">
+                                                {cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}
+                                            </button>
+                                            <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+                                                <Trash2 size={18}/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </Draggable>
+                        ))}
+                        {provided.placeholder}
                     </div>
-                );
-            })}
-         </div>
+                )}
+            </Droppable>
+        </DragDropContext>
       )}
       <Modal isOpen={isCatModalOpen} onClose={() => setIsCatModalOpen(false)} title="Yangi Kategoriya">
          <form onSubmit={async (e) => { e.preventDefault(); if(catForm.name.trim()) { await addCategory(catForm.name, catForm.viewType); setCatForm({name:'', viewType:'grid'}); setIsCatModalOpen(false); showToast('Qo\'shildi'); } }} className="space-y-6">

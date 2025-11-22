@@ -18,6 +18,7 @@ interface StoreContextType {
   addCategory: (name: string, viewType: CategoryViewType) => Promise<void>;
   updateCategory: (id: string, data: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  reorderCategories: (categories: Category[]) => Promise<void>; // Yangi funksiya
   dishes: Dish[];
   addDish: (dish: Omit<Dish, 'id'>) => Promise<void>;
   updateDish: (id: string, data: Dish) => Promise<void>;
@@ -58,7 +59,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         ]);
         setBranding(await brandingRes.json());
         setBranches(await branchesRes.json());
-        setCategories(await categoriesRes.json());
+        setCategories((await categoriesRes.json()).sort((a, b) => a.sortOrder - b.sortOrder));
         setDishes(await dishesRes.json());
       } catch (error) { console.error("Failed to fetch initial data:", error); } 
       finally { setLoading(false); }
@@ -113,6 +114,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDishes(prev => prev.filter(d => d.categoryId !== id));
   };
 
+  const reorderCategories = async (reorderedCategories: Category[]) => {
+    // Optimistic update
+    const originalCategories = [...categories];
+    setCategories(reorderedCategories);
+
+    try {
+      const updatePromises = reorderedCategories.map((cat, index) => 
+        apiRequest(`${API_BASE_URL}/categories/${cat.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ sortOrder: index }),
+        })
+      );
+      await Promise.all(updatePromises);
+    } catch (error) {
+      // Rollback on error
+      setCategories(originalCategories);
+      console.error("Failed to reorder categories:", error);
+      throw error; // Re-throw to notify the component
+    }
+  };
+
   const addDish = async (dishData: Omit<Dish, 'id'>) => {
     const currentCategoryDishes = dishes.filter(d => d.categoryId === dishData.categoryId);
     const maxSort = currentCategoryDishes.reduce((max, d) => Math.max(max, d.sortOrder), 0);
@@ -151,7 +173,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       apiRequest(`${API_BASE_URL}/dishes/${targetDish.id}`, { method: 'PATCH', body: JSON.stringify({ sortOrder: adjacentDish.sortOrder }) }),
       apiRequest(`${API_BASE_URL}/dishes/${adjacentDish.id}`, { method: 'PATCH', body: JSON.stringify({ sortOrder: targetDish.sortOrder }) })
     ]);
-    // Re-fetch for consistency after manual patch
     const updatedDishes = await apiRequest(`${API_BASE_URL}/dishes`);
     setDishes(updatedDishes);
   };
@@ -160,7 +181,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return dishes.filter(d => d.categoryId === categoryId && d.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
   };
 
-  const value = { loading, userInfo, signIn, signOut, branding, updateBranding, branches, addBranch, updateBranch, deleteBranch, categories, addCategory, updateCategory, deleteCategory, dishes, addDish, updateDish, deleteDish, reorderDishes, moveDish, getDishesByCategory };
+  const value = { loading, userInfo, signIn, signOut, branding, updateBranding, branches, addBranch, updateBranch, deleteBranch, categories, addCategory, updateCategory, deleteCategory, reorderCategories, dishes, addDish, updateDish, deleteDish, reorderDishes, moveDish, getDishesByCategory };
 
   return <StoreContext.Provider value={value as StoreContextType}>{children}</StoreContext.Provider>;
 };
