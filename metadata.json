@@ -1,0 +1,5 @@
+{
+  "name": "TabletMenu",
+  "description": "Restoranlar uchun filiallar va menyu boshqaruv tizimi. Planshet uchun moslashtirilgan mijoz ko'rinishi va admin panel.",
+  "requestFramePermissions": []
+}
