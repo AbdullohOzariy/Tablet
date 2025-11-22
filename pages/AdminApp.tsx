@@ -41,7 +41,6 @@ const BranchManager: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingId) {
-        // We need to pass the full branch object to updateBranch now
         const originalBranch = branches.find(b => b.id === editingId);
         if (originalBranch) {
             await updateBranch(editingId, { ...originalBranch, ...formState });
@@ -309,18 +308,31 @@ const MenuManager: React.FC = () => {
          </>
       ) : (
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.sort((a,b) => a.sortOrder - b.sortOrder).map(cat => (
-               <div key={cat.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-orange-200 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">{cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/></div>
-                     <div><h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3><span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat ko'rinishida" : "Kartochka ko'rinishida"}</span></div>
-                  </div>
-                  <div className="flex gap-2">
-                     <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">{cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}</button>
-                     <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 size={18}/></button>
-                  </div>
-               </div>
-            ))}
+            {categories.sort((a,b) => a.sortOrder - b.sortOrder).map(cat => {
+                const CategoryIcon = cat.viewType === 'list' ? <LayoutList size={24}/> : <Grid size={24}/>;
+                const ToggleIcon = cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>;
+                return (
+                    <div key={cat.id} className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm flex items-center justify-between group hover:border-orange-200 hover:shadow-md transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
+                                {CategoryIcon}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3>
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat ko'rinishida" : "Kartochka ko'rinishida"}</span>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">
+                                {ToggleIcon}
+                            </button>
+                            <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+                                <Trash2 size={18}/>
+                            </button>
+                        </div>
+                    </div>
+                );
+            })}
          </div>
       )}
       <Modal isOpen={isCatModalOpen} onClose={() => setIsCatModalOpen(false)} title="Yangi Kategoriya">
