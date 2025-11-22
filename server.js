@@ -8,19 +8,21 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3001;
+const host = '0.0.0.0';
+
+// Doimiy xotiradagi db.json yo'lini ko'rsatish
+const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'db.json') : 'db.json';
 
 // 1. JSON Server API'ni sozlash
-const router = jsonServer.router('db.json');
+const router = jsonServer.router(dbPath);
 const middlewares = jsonServer.defaults();
 
-app.use('/api', middlewares, router); // Barcha API so'rovlarini /api yo'lida ishga tushirish
+app.use('/api', middlewares, router);
 
 // 2. React ilovasining statik fayllarini ulash
-// 'dist' papkasi 'npm run build' dan keyin paydo bo'ladi
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // 3. API'ga tegishli bo'lmagan har qanday so'rovni React ilovasiga yuborish
-// Bu React Router'ning to'g'ri ishlashi uchun kerak
 app.get('*', (req, res) => {
   if (!req.originalUrl.startsWith('/api')) {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
@@ -29,6 +31,7 @@ app.get('*', (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`Server is running on http://${host}:${port}`);
+  console.log(`Database is being read from: ${dbPath}`);
 });
