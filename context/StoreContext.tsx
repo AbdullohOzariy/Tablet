@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Branch, Category, Dish, Branding, CategoryViewType, UserInfo } from '../types';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001';
+const API_BASE_URL = '/api'; // Endi manzil sodda va universal
 
 interface StoreContextType {
   loading: boolean;
@@ -18,7 +18,7 @@ interface StoreContextType {
   addCategory: (name: string, viewType: CategoryViewType) => Promise<void>;
   updateCategory: (id: string, data: Category) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
-  reorderCategories: (categories: Category[]) => Promise<void>; // Yangi funksiya
+  reorderCategories: (categories: Category[]) => Promise<void>;
   dishes: Dish[];
   addDish: (dish: Omit<Dish, 'id'>) => Promise<void>;
   updateDish: (id: string, data: Dish) => Promise<void>;
@@ -115,23 +115,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const reorderCategories = async (reorderedCategories: Category[]) => {
-    // Optimistic update
     const originalCategories = [...categories];
     setCategories(reorderedCategories);
-
     try {
       const updatePromises = reorderedCategories.map((cat, index) => 
-        apiRequest(`${API_BASE_URL}/categories/${cat.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ sortOrder: index }),
-        })
+        apiRequest(`${API_BASE_URL}/categories/${cat.id}`, { method: 'PATCH', body: JSON.stringify({ sortOrder: index }) })
       );
       await Promise.all(updatePromises);
     } catch (error) {
-      // Rollback on error
       setCategories(originalCategories);
       console.error("Failed to reorder categories:", error);
-      throw error; // Re-throw to notify the component
+      throw error;
     }
   };
 
