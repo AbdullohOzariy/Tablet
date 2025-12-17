@@ -94,3 +94,27 @@ export const ConfirmationModal: React.FC<{
     </div>
   );
 };
+
+export const FloatingActionButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: React.ElementType }> = ({ icon: Icon, ...props }) => (
+    <button
+        className="fixed bottom-24 right-6 lg:hidden w-16 h-16 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-800 active:scale-95 transition-all z-40"
+        {...props}
+    >
+        <Icon size={28} />
+    </button>
+);
+
+export const LoadingSpinner: React.FC = () => (
+    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+);
+
+export const EmptyState: React.FC<{icon: React.ElementType, title: string, description: string, children?: React.ReactNode}> = ({ icon: Icon, title, description, children }) => (
+    <div className="text-center py-16 px-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
+        <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
+            <Icon size={36} />
+        </div>
+        <h3 className="text-xl font-bold text-gray-800">{title}</h3>
+        <p className="text-gray-500 mt-2 mb-6 max-w-sm mx-auto">{description}</p>
+        {children}
+    </div>
+);
