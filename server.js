@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 8080; // Default to 8080 if PORT is not set
 const host = '0.0.0.0';
 
 // Database setup
@@ -44,7 +44,6 @@ try {
         console.log(`Database file not found at ${dbPath}, creating a new one...`);
         fs.writeFileSync(dbPath, JSON.stringify(defaultData, null, 2));
     } else {
-        // Check if file is empty or invalid JSON
         const content = fs.readFileSync(dbPath, 'utf-8');
         try {
             JSON.parse(content);
@@ -56,6 +55,12 @@ try {
 } catch (err) {
     console.error("Error initializing database:", err);
 }
+
+// --- Health Check Endpoint ---
+// Railway uses this to verify the app is running
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
 
 // 1. JSON Server API
 const router = jsonServer.router(dbPath);
