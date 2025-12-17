@@ -14,31 +14,37 @@ export default defineConfig({
         description: 'Restoranlar uchun zamonaviy raqamli menyu',
         theme_color: '#ffffff',
         icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
         ]
       },
       workbox: {
         runtimeCaching: [
           {
+            // API so'rovlarini keshlashtirish (NetworkFirst)
             urlPattern: ({ url }) => url.pathname.startsWith('/api'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
+              cacheableResponse: { statuses: [0, 200] },
+              backgroundSync: {
+                name: 'api-sync-queue',
+                options: { maxRetentionTime: 24 * 60 }
+              }
+            }
+          },
+          {
+            // Tashqi rasmlarni keshlashtirish (CacheFirst)
+            // Bu qoida weserv.nl, unsplash va boshqa rasm manbalarini qamrab oladi
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100, // Maksimum 100 ta rasm saqlanadi
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 kun davomida saqlanadi
+              },
               cacheableResponse: {
                 statuses: [0, 200]
               }
