@@ -22,7 +22,6 @@ export default defineConfig({
       workbox: {
         runtimeCaching: [
           {
-            // API so'rovlarini keshlashtirish (NetworkFirst)
             urlPattern: ({ url }) => url.pathname.startsWith('/api'),
             handler: 'NetworkFirst',
             options: {
@@ -35,18 +34,18 @@ export default defineConfig({
             }
           },
           {
-            // Tashqi rasmlarni keshlashtirish (CacheFirst)
-            // Bu qoida weserv.nl, unsplash va boshqa rasm manbalarini qamrab oladi
+            // Rasmlar uchun StaleWhileRevalidate strategiyasi
+            // Bu keshdan darhol ko'rsatadi va orqa fonda yangilaydi
             urlPattern: ({ request }) => request.destination === 'image',
-            handler: 'CacheFirst',
+            handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 100, // Maksimum 100 ta rasm saqlanadi
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 kun davomida saqlanadi
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 kun
               },
               cacheableResponse: {
-                statuses: [0, 200]
+                statuses: [0, 200] // 0 statusi CORS muammosi bo'lgan rasmlar uchun muhim
               }
             }
           }

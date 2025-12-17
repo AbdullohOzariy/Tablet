@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { Branch, Dish } from '../types';
-import { MapPin, Phone, Info, ChevronRight, ArrowLeft, Home, Clock, Utensils, Sparkles, ServerCrash } from 'lucide-react';
+import { MapPin, Phone, Info, ChevronRight, ArrowLeft, Home, Utensils, Sparkles, ServerCrash } from 'lucide-react';
 
 // --- Helper Functions & Components ---
 
@@ -129,7 +129,6 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                   <div><h1 className="text-base font-extrabold leading-none" style={textStyle}>{branding.restaurantName}</h1><p className="text-xs font-bold uppercase tracking-wide" style={mutedStyle}>{branch.name}</p></div>
               </div>
            </div>
-           <div className="px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-transparent" style={{ backgroundColor: branding.backgroundColor }}><Clock size={14} style={{ color: themeColor }}/><span className="text-xs font-bold tabular-nums" style={textStyle}>{new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
         </div>
       </div>
 
@@ -167,7 +166,7 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
                            {dish.badges && dish.badges.length > 0 && <div className="absolute bottom-2 left-2 flex gap-1.5 z-10">{dish.badges.map((badgeUrl, bIdx) => <div key={bIdx} className="w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm p-0.5 shadow-md flex items-center justify-center" title="Ingredient"><img src={badgeUrl} alt="badge" className="w-full h-full object-contain" /></div>)}</div>}
                         </div>
                         <div className="flex-1 flex flex-col px-1 sm:px-2 pb-1">
-                           <h3 className="font-bold sm:font-extrabold leading-tight line-clamp-2 text-sm sm:text-xl" title={dish.name} style={textStyle}>{dish.name}</h3>
+                           <h3 className="font-bold sm:font-extrabold leading-tight line-clamp-2 text-base sm:text-xl" title={dish.name} style={textStyle}>{dish.name}</h3>
                            <p className="text-sm leading-relaxed line-clamp-2 mt-2 mb-4 flex-1 font-medium hidden sm:block" style={mutedStyle}>{dish.description || "Mazali taom, albatta tatib ko'ring!"}</p>
                            <div className="mt-auto pt-2 border-t border-dashed" style={{ borderColor: `${branding.mutedColor}22` }}>
                               {dish.variants && dish.variants.length > 0 ? <div className="text-sm sm:text-base font-bold" style={{ color: themeColor }}>{dish.variants[0].price.toLocaleString()} so'mdan</div> : <div className="text-base sm:text-xl font-black" style={{ color: themeColor }}>{dish.price.toLocaleString()} so'm</div>}
