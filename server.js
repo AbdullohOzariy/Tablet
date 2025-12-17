@@ -16,10 +16,8 @@ const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
   ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'db.json')
   : path.join(__dirname, 'db.json');
 
-// Ensure db.json exists
-if (!fs.existsSync(dbPath)) {
-  console.log(`Database file not found at ${dbPath}, creating a new one...`);
-  const initialData = {
+// Default data if db.json is missing or empty
+const defaultData = {
     branding: {
         restaurantName: "Lazzat Milliy Taomlar",
         slogan: "Restoran biznesingiz uchun zamonaviy raqamli menyu.",
@@ -38,8 +36,25 @@ if (!fs.existsSync(dbPath)) {
     branches: [],
     categories: [],
     dishes: []
-  };
-  fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2));
+};
+
+// Ensure db.json exists and is valid
+try {
+    if (!fs.existsSync(dbPath)) {
+        console.log(`Database file not found at ${dbPath}, creating a new one...`);
+        fs.writeFileSync(dbPath, JSON.stringify(defaultData, null, 2));
+    } else {
+        // Check if file is empty or invalid JSON
+        const content = fs.readFileSync(dbPath, 'utf-8');
+        try {
+            JSON.parse(content);
+        } catch (e) {
+            console.error("db.json is corrupted, resetting to default data.");
+            fs.writeFileSync(dbPath, JSON.stringify(defaultData, null, 2));
+        }
+    }
+} catch (err) {
+    console.error("Error initializing database:", err);
 }
 
 // 1. JSON Server API
@@ -50,21 +65,23 @@ app.use('/api', middlewares, router);
 
 // 2. Serve Static Files (Frontend)
 const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+} else {
+    console.warn("WARNING: 'dist' folder not found. Frontend will not be served.");
+}
 
 // 3. Handle SPA Routing (Catch-all)
 app.get('*', (req, res) => {
   if (req.originalUrl.startsWith('/api')) {
-     // If API route is not found, let json-server handle it (it usually returns 404)
      return res.status(404).json({ error: "API endpoint not found" });
   }
 
-  // For any other route, serve index.html
   const indexPath = path.join(distPath, 'index.html');
   if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
   } else {
-      res.status(404).send('Frontend build not found. Did you run "npm run build"?');
+      res.status(404).send('Frontend build not found. Please run "npm run build" locally or check your deployment logs.');
   }
 });
 
