@@ -216,5 +216,5 @@ const CustomerApp: React.FC = () => {
   if (selectedBranch) return <MenuViewer branch={selectedBranch} onBack={() => setSelectedBranch(null)} />;
   return <BranchSelector onSelect={setSelectedBranch} />;
 };
-
+/* faqat git uchun */
 export default CustomerApp;
