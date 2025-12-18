@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { Branch, Dish, Category, CategoryViewType } from '../types';
 import {
   Store, UtensilsCrossed, Settings, LogOut, Plus, Trash2, Edit2, Search, ChefHat, Save, X, GripVertical,
-  LayoutList, Grid, Building, Info, Hand, CheckCircle, XCircle, Maximize2, Link as LinkIcon, Upload, Globe, Layers, Tag, Palette, Type, ServerCrash
+  LayoutList, Grid, Building, Info, Hand, CheckCircle, XCircle, Maximize2, Link as LinkIcon, Upload, Globe, Layers, Tag, Palette, Type, ServerCrash, Image as ImageIcon
 } from 'lucide-react';
 import { Button, Input, TextArea, Modal, FloatingActionButton } from '../components/ui';
 import { DishModal } from '../components/modals/DishModal';
@@ -27,15 +27,68 @@ const EmptyState: React.FC<{icon: React.ElementType, title: string, description:
 
 // --- Manager Components ---
 
-const BranchManager: React.FC<{ onAdd: () => void, onEdit: (branch: Branch) => void }> = ({ onAdd, onEdit }) => {
-  const { branches, deleteBranch } = useStore();
+const BranchManager: React.FC<{ fabTrigger: number }> = ({ fabTrigger }) => {
+  const { branches, addBranch, updateBranch, deleteBranch } = useStore();
+  const { showToast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [formState, setFormState] = useState<Omit<Branch, 'id'>>({ name: '', address: '', phone: '', customColor: '#F97316', logoUrl: '' });
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (fabTrigger > 0) openModal();
+  }, [fabTrigger]);
 
   const filteredBranches = useMemo(() =>
     branches.filter(branch =>
         branch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         branch.address.toLowerCase().includes(searchTerm.toLowerCase())
     ), [branches, searchTerm]);
+
+  const openModal = (branch?: Branch) => {
+    if (branch) {
+      setEditingBranch(branch);
+      setFormState({ name: branch.name, address: branch.address, phone: branch.phone, customColor: branch.customColor || '#F97316', logoUrl: branch.logoUrl || '' });
+    } else {
+      setEditingBranch(null);
+      setFormState({ name: '', address: '', phone: '', customColor: '#F97316', logoUrl: '' });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formState.name || !formState.address || !formState.phone) {
+        showToast("Barcha maydonlarni to'ldiring!", "error");
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+      if (editingBranch) {
+        await updateBranch(editingBranch.id, { id: editingBranch.id, ...formState });
+        showToast('Filial yangilandi');
+      } else {
+        await addBranch(formState);
+        showToast('Yangi filial qo\'shildi');
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+        console.error("Filialni saqlashda xatolik:", error);
+        showToast('Xatolik yuz berdi!', 'error');
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setFormState(prev => ({ ...prev, logoUrl: reader.result as string }));
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -44,11 +97,11 @@ const BranchManager: React.FC<{ onAdd: () => void, onEdit: (branch: Branch) => v
             <Input icon={Search} placeholder="Filial izlash..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <div className="hidden md:block">
-            <Button onClick={onAdd} icon={Plus}>Yangi Filial</Button>
+            <Button onClick={() => openModal()} icon={Plus}>Yangi Filial</Button>
         </div>
       </div>
       {branches.length === 0 ? (
-        <EmptyState icon={Building} title="Hali filiallar yo'q" description="Tizimga birinchi filialingizni qo'shing."><Button onClick={onAdd} icon={Plus}>Birinchi Filialni Qo'shish</Button></EmptyState>
+        <EmptyState icon={Building} title="Hali filiallar yo'q" description="Tizimga birinchi filialingizni qo'shing."><Button onClick={() => openModal()} icon={Plus}>Birinchi Filialni Qo'shish</Button></EmptyState>
       ) : filteredBranches.length === 0 ? (
         <EmptyState icon={Search} title="Natija topilmadi" description={`"${searchTerm}" uchun filiallar topilmadi.`} />
       ) : (
@@ -60,7 +113,7 @@ const BranchManager: React.FC<{ onAdd: () => void, onEdit: (branch: Branch) => v
                     {branch.logoUrl ? <img src={branch.logoUrl} className="w-full h-full object-cover" alt="Logo" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/100?text=Logo'}/> : <Store size={32} className="text-gray-400" />}
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEdit(branch)} className="p-2.5 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-xl transition-colors"><Edit2 size={18}/></button>
+                    <button onClick={() => openModal(branch)} className="p-2.5 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-xl transition-colors"><Edit2 size={18}/></button>
                     <button onClick={() => deleteBranch(branch.id)} className="p-2.5 bg-gray-50 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-xl transition-colors"><Trash2 size={18}/></button>
                     </div>
                 </div>
@@ -70,15 +123,68 @@ const BranchManager: React.FC<{ onAdd: () => void, onEdit: (branch: Branch) => v
             ))}
         </div>
       )}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBranch ? 'Filialni Tahrirlash' : 'Yangi Filial Yaratish'}>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex flex-col md:flex-row gap-6">
+             <div className="flex flex-col gap-3 shrink-0 items-center md:items-start">
+                <div className="w-32 h-32 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 relative group">
+                    {formState.logoUrl ? <img src={formState.logoUrl} className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/150?text=Error'} /> : <ImageIcon className="text-gray-400 w-10 h-10" />}
+                    <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                       <Upload size={24} /><span className="text-xs font-bold mt-1">Fayl yuklash</span>
+                       <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    </label>
+                </div>
+                <p className="text-xs text-gray-400 text-center md:text-left">Fayl yuklang yoki<br/>pastga URL yozing</p>
+             </div>
+             <div className="flex-1 space-y-4 w-full">
+                <Input label="Nomi" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} placeholder="Filial nomi" required />
+                <Input label="Logo Linki (URL)" value={formState.logoUrl} onChange={e => setFormState({...formState, logoUrl: e.target.value})} placeholder="https://..." icon={LinkIcon} />
+                <Input label="Telefon" value={formState.phone} onChange={e => setFormState({...formState, phone: e.target.value})} placeholder="+998 90 123 45 67" required />
+             </div>
+          </div>
+          <Input label="Manzil" value={formState.address} onChange={e => setFormState({...formState, address: e.target.value})} placeholder="To'liq manzil" required />
+          <div>
+             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-2">Brend Rangi</label>
+             <div className="flex gap-3">
+                {['#F97316', '#EF4444', '#3B82F6', '#10B981', '#8B5CF6', '#6366F1'].map(color => (
+                   <button key={color} type="button" onClick={() => setFormState({...formState, customColor: color})} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110 ${formState.customColor === color ? 'border-gray-900 scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }}>
+                      {formState.customColor === color && <CheckCircle className="text-white w-5 h-5" />}
+                   </button>
+                ))}
+                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200"><input type="color" className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" value={formState.customColor} onChange={e => setFormState({...formState, customColor: e.target.value})} /></div>
+             </div>
+          </div>
+          <div className="pt-4 flex gap-3">
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)} className="flex-1" disabled={isSubmitting}>Bekor qilish</Button>
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>{isSubmitting ? <LoadingSpinner/> : (editingBranch ? 'Saqlash' : 'Yaratish')}</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
 
-const MenuManager: React.FC<{ onAddDish: () => void, onEditDish: (dish: Dish) => void, onAddCategory: () => void, onEditCategory: (cat: Category) => void }> = ({ onAddDish, onEditDish, onAddCategory, onEditCategory }) => {
-  const { categories, updateCategory, deleteCategory, reorderCategories, dishes, updateDish, deleteDish } = useStore();
+const MenuManager: React.FC<{ fabTrigger: number }> = ({ fabTrigger }) => {
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories, dishes, updateDish, deleteDish } = useStore();
   const { showToast } = useToast();
+
   const [activeTab, setActiveTab] = useState<'dishes' | 'categories'>('dishes');
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState<Dish | null>(null);
+
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [catForm, setCatForm] = useState<{name: string, viewType: CategoryViewType}>({ name: '', viewType: 'grid' });
+
+  useEffect(() => {
+    if (fabTrigger > 0) {
+        if (activeTab === 'categories') openCategoryModal();
+        else openDishModal();
+    }
+  }, [fabTrigger]);
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source } = result;
@@ -88,6 +194,42 @@ const MenuManager: React.FC<{ onAddDish: () => void, onEditDish: (dish: Dish) =>
     newCategories.splice(destination.index, 0, reorderedItem);
     const updatedCategories = newCategories.map((cat, index) => ({ ...cat, sortOrder: index }));
     reorderCategories(updatedCategories).catch(() => showToast("Tartibni saqlashda xatolik!", "error"));
+  };
+
+  const openCategoryModal = (category?: Category) => {
+    if (category) {
+        setEditingCategory(category);
+        setCatForm({ name: category.name, viewType: category.viewType });
+    } else {
+        setEditingCategory(null);
+        setCatForm({ name: '', viewType: 'grid' });
+    }
+    setIsCatModalOpen(true);
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catForm.name.trim()) return;
+    setIsSubmitting(true);
+    try {
+        if (editingCategory) {
+            await updateCategory(editingCategory.id, { ...editingCategory, ...catForm });
+            showToast('Kategoriya yangilandi');
+        } else {
+            await addCategory(catForm.name, catForm.viewType);
+            showToast('Yangi kategoriya qo\'shildi');
+        }
+        setIsCatModalOpen(false);
+    } catch (error) {
+        showToast('Xatolik yuz berdi!', 'error');
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const openDishModal = (dish?: Dish) => {
+    setEditingDish(dish || null);
+    setIsDishModalOpen(true);
   };
 
   const filteredDishes = useMemo(() =>
@@ -109,7 +251,7 @@ const MenuManager: React.FC<{ onAddDish: () => void, onEditDish: (dish: Dish) =>
             </div>
          )}
          <div className="hidden md:block">
-            <Button onClick={() => activeTab === 'dishes' ? onAddDish() : onAddCategory()} icon={Plus}>{activeTab === 'dishes' ? 'Yangi Taom' : 'Yangi Kategoriya'}</Button>
+            <Button onClick={() => activeTab === 'dishes' ? openDishModal() : openCategoryModal()} icon={Plus}>{activeTab === 'dishes' ? 'Yangi Taom' : 'Yangi Kategoriya'}</Button>
          </div>
       </div>
       {activeTab === 'categories' ? (
@@ -127,7 +269,7 @@ const MenuManager: React.FC<{ onAddDish: () => void, onEditDish: (dish: Dish) =>
                                             <div><h3 className="font-bold text-gray-900 text-lg">{cat.name}</h3><span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{cat.viewType === 'list' ? "Ro'yxat" : "Kartochka"}</span></div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => onEditCategory(cat)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Tahrirlash"><Edit2 size={18}/></button>
+                                            <button onClick={() => openCategoryModal(cat)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Tahrirlash"><Edit2 size={18}/></button>
                                             <button onClick={() => updateCategory(cat.id, { ...cat, viewType: cat.viewType === 'grid' ? 'list' : 'grid' })} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors" title="Ko'rinishni o'zgartirish">{cat.viewType === 'grid' ? <LayoutList size={18}/> : <Grid size={18}/>}</button>
                                             <button onClick={() => deleteCategory(cat.id)} className="p-2 bg-gray-50 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"><Trash2 size={18}/></button>
                                         </div>
@@ -160,13 +302,27 @@ const MenuManager: React.FC<{ onAddDish: () => void, onEditDish: (dish: Dish) =>
                   </div>
                   <div className="absolute right-2 top-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0 bg-white/90 backdrop-blur-sm p-1 rounded-xl z-30 shadow-sm">
                      <button onClick={() => updateDish(dish.id, { ...dish, isActive: !dish.isActive })} className={`p-2 rounded-xl border shadow-sm transition-colors ${dish.isActive ? 'bg-white text-gray-400 hover:text-blue-500' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{dish.isActive ? <CheckCircle size={18}/> : <XCircle size={18}/>}</button>
-                     <button onClick={() => onEditDish(dish)} className="p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-orange-500 hover:border-orange-200 transition-colors"><Edit2 size={18}/></button>
+                     <button onClick={() => openDishModal(dish)} className="p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-orange-500 hover:border-orange-200 transition-colors"><Edit2 size={18}/></button>
                      <button onClick={() => deleteDish(dish.id)} className="p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-500 hover:text-red-500 hover:border-red-200 transition-colors"><Trash2 size={18}/></button>
                   </div>
                </div>
             ))}
         </div>
       )}
+      <DishModal isOpen={isDishModalOpen} onClose={() => setIsDishModalOpen(false)} editingDish={editingDish} initialCategoryId={selectedCatId !== 'all' ? selectedCatId : undefined} />
+      <Modal isOpen={isCatModalOpen} onClose={() => setIsCatModalOpen(false)} title={editingCategory ? 'Kategoriyani Tahrirlash' : 'Yangi Kategoriya'}>
+        <form onSubmit={handleCategorySubmit} className="space-y-6">
+            <Input label="Nomi" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} placeholder="Masalan: Shirinliklar" autoFocus />
+            <div>
+               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-2">Ko'rinish Turi</label>
+               <div className="grid grid-cols-2 gap-4">
+                  <button type="button" onClick={() => setCatForm({...catForm, viewType: 'grid'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${catForm.viewType === 'grid' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}><Grid size={32} /><span className="font-bold">Kartochka</span></button>
+                  <button type="button" onClick={() => setCatForm({...catForm, viewType: 'list'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${catForm.viewType === 'list' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}><LayoutList size={32} /><span className="font-bold">Ro'yxat</span></button>
+               </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <LoadingSpinner /> : (editingCategory ? 'Saqlash' : 'Qo\'shish')}</Button>
+         </form>
+      </Modal>
     </div>
   );
 };
@@ -257,29 +413,14 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [fabTrigger, setFabTrigger] = useState(0);
 
-  // --- Modal States (Lifted Up) ---
-  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
-  const [isDishModalOpen, setIsDishModalOpen] = useState(false);
-  const [editingDish, setEditingDish] = useState<Dish | null>(null);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
   const handleLogout = () => { signOut(); navigate('/admin/login'); };
-  const handleFabClick = () => {
-    if (activeTab === 'branches') openBranchModal();
-    else if (activeTab === 'menu') openDishModal();
-  };
-
-  const openBranchModal = (branch?: Branch) => { setEditingBranch(branch || null); setIsBranchModalOpen(true); };
-  const openDishModal = (dish?: Dish) => { setEditingDish(dish || null); setIsDishModalOpen(true); };
-  const openCategoryModal = (cat?: Category) => { setEditingCategory(cat || null); setIsCategoryModalOpen(true); };
+  const handleFabClick = () => setFabTrigger(c => c + 1);
 
   const renderContent = () => {
     if (error) return <EmptyState icon={ServerCrash} title="Server bilan aloqa yo'q" description={error} />;
     switch (activeTab) {
-        case 'branches': return <BranchManager onAdd={openBranchModal} onEdit={openBranchModal} />;
-        case 'menu': return <MenuManager onAddDish={openDishModal} onEditDish={openDishModal} onAddCategory={openCategoryModal} onEditCategory={openCategoryModal} />;
+        case 'branches': return <BranchManager fabTrigger={fabTrigger} />;
+        case 'menu': return <MenuManager fabTrigger={fabTrigger} />;
         case 'settings': return <SettingsManager />;
         default: return null;
     }
@@ -323,159 +464,16 @@ const AdminDashboard: React.FC = () => {
         <BottomNavItem icon={Settings} label="Sozlamalar" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
       </div>
       {activeTab !== 'settings' && <FloatingActionButton icon={Plus} onClick={handleFabClick} />}
-
-      {/* Modals are controlled here */}
-      <BranchModal isOpen={isBranchModalOpen} onClose={() => setIsBranchModalOpen(false)} editingBranch={editingBranch} />
-      <DishModal isOpen={isDishModalOpen} onClose={() => setIsDishModalOpen(false)} editingDish={editingDish} />
-      <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} editingCategory={editingCategory} />
     </div>
   );
 };
 
-// --- Modal Components (Extracted for clarity) ---
-
-const BranchModal: React.FC<{isOpen: boolean, onClose: () => void, editingBranch: Branch | null}> = ({isOpen, onClose, editingBranch}) => {
-    const { addBranch, updateBranch } = useStore();
-    const { showToast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formState, setFormState] = useState<Omit<Branch, 'id'>>({ name: '', address: '', phone: '', customColor: '#F97316', logoUrl: '' });
-
-    useEffect(() => {
-        if (editingBranch) {
-            setFormState({ name: editingBranch.name, address: editingBranch.address, phone: editingBranch.phone, customColor: editingBranch.customColor || '#F97316', logoUrl: editingBranch.logoUrl || '' });
-        } else {
-            setFormState({ name: '', address: '', phone: '', customColor: '#F97316', logoUrl: '' });
-        }
-    }, [editingBranch, isOpen]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!formState.name) return;
-        setIsSubmitting(true);
-        try {
-            if (editingBranch) {
-                await updateBranch(editingBranch.id, { id: editingBranch.id, ...formState });
-                showToast('Filial yangilandi');
-            } else {
-                await addBranch(formState);
-                showToast('Yangi filial qo\'shildi');
-            }
-            onClose();
-        } catch (error) {
-            showToast('Xatolik!', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onloadend = () => setFormState(prev => ({ ...prev, logoUrl: reader.result as string }));
-          reader.readAsDataURL(file);
-        }
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editingBranch ? 'Filialni Tahrirlash' : 'Yangi Filial Yaratish'}>
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex flex-col gap-3 shrink-0 items-center md:items-start">
-                        <div className="w-32 h-32 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 bg-gray-50 relative group">
-                            {formState.logoUrl ? <img src={formState.logoUrl} className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).src='https://via.placeholder.com/150?text=Error'} /> : <ImageIcon className="text-gray-400 w-10 h-10" />}
-                            <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                            <Upload size={24} /><span className="text-xs font-bold mt-1">Fayl yuklash</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                            </label>
-                        </div>
-                        <p className="text-xs text-gray-400 text-center md:text-left">Fayl yuklang yoki<br/>pastga URL yozing</p>
-                    </div>
-                    <div className="flex-1 space-y-4 w-full">
-                        <Input label="Nomi" value={formState.name} onChange={e => setFormState({...formState, name: e.target.value})} placeholder="Filial nomi" required />
-                        <Input label="Logo Linki (URL)" value={formState.logoUrl} onChange={e => setFormState({...formState, logoUrl: e.target.value})} placeholder="https://..." icon={LinkIcon} />
-                        <Input label="Telefon" value={formState.phone} onChange={e => setFormState({...formState, phone: e.target.value})} placeholder="+998 90 123 45 67" required />
-                    </div>
-                </div>
-                <Input label="Manzil" value={formState.address} onChange={e => setFormState({...formState, address: e.target.value})} placeholder="To'liq manzil" required />
-                <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-2">Brend Rangi</label>
-                    <div className="flex gap-3">
-                        {['#F97316', '#EF4444', '#3B82F6', '#10B981', '#8B5CF6', '#6366F1'].map(color => (
-                        <button type="button" key={color} onClick={() => setFormState({...formState, customColor: color})} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110 ${formState.customColor === color ? 'border-gray-900 scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }}>
-                            {formState.customColor === color && <CheckCircle className="text-white w-5 h-5" />}
-                        </button>
-                        ))}
-                        <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200"><input type="color" className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer" value={formState.customColor} onChange={e => setFormState({...formState, customColor: e.target.value})} /></div>
-                    </div>
-                </div>
-                <div className="pt-4 flex gap-3">
-                    <Button type="button" variant="secondary" onClick={onClose} className="flex-1" disabled={isSubmitting}>Bekor qilish</Button>
-                    <Button type="submit" className="flex-1" disabled={isSubmitting}>{isSubmitting ? <LoadingSpinner/> : (editingBranch ? 'Saqlash' : 'Yaratish')}</Button>
-                </div>
-            </form>
-        </Modal>
-    );
-}
-
-const CategoryModal: React.FC<{isOpen: boolean, onClose: () => void, editingCategory: Category | null}> = ({isOpen, onClose, editingCategory}) => {
-    const { addCategory, updateCategory } = useStore();
-    const { showToast } = useToast();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [catForm, setCatForm] = useState<{name: string, viewType: CategoryViewType}>({ name: '', viewType: 'grid' });
-
-    useEffect(() => {
-        if (editingCategory) {
-            setCatForm({ name: editingCategory.name, viewType: editingCategory.viewType });
-        } else {
-            setCatForm({ name: '', viewType: 'grid' });
-        }
-    }, [editingCategory, isOpen]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!catForm.name.trim()) return;
-        setIsSubmitting(true);
-        try {
-            if (editingCategory) {
-                await updateCategory(editingCategory.id, { ...editingCategory, ...catForm });
-                showToast('Kategoriya yangilandi');
-            } else {
-                await addCategory(catForm.name, catForm.viewType);
-                showToast('Yangi kategoriya qo\'shildi');
-            }
-            onClose();
-        } catch (error) {
-            showToast('Xatolik!', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title={editingCategory ? 'Kategoriyani Tahrirlash' : 'Yangi Kategoriya'}>
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <Input label="Nomi" value={catForm.name} onChange={e => setCatForm({...catForm, name: e.target.value})} placeholder="Masalan: Shirinliklar" autoFocus />
-                <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-2">Ko'rinish Turi</label>
-                <div className="grid grid-cols-2 gap-4">
-                    <button type="button" onClick={() => setCatForm({...catForm, viewType: 'grid'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${catForm.viewType === 'grid' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}><Grid size={32} /><span className="font-bold">Kartochka</span><span className="text-[10px] opacity-70">Rasmli va katta</span></button>
-                    <button type="button" onClick={() => setCatForm({...catForm, viewType: 'list'})} className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${catForm.viewType === 'list' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-500 hover:bg-gray-100'}`}><LayoutList size={32} /><span className="font-bold">Ro'yxat</span><span className="text-[10px] opacity-70">Ixcham va matnli</span></button>
-                </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? <LoadingSpinner /> : (editingCategory ? 'Saqlash' : 'Qo\'shish')}
-                </Button>
-            </form>
-        </Modal>
-    );
-}
-
 const AdminApp: React.FC = () => {
-  const { loading } = useStore();
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center"><div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>;
-  }
+  const { loading, error } = useStore();
+
+  if (loading) return <div className="flex h-screen items-center justify-center"><div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (error && !window.location.pathname.includes('/login')) return <div className="flex h-screen items-center justify-center p-4"><EmptyState icon={ServerCrash} title="Server bilan aloqa yo'q" description={error} /></div>;
+
   return (
     <Routes>
       <Route path="login" element={<Login />} />
