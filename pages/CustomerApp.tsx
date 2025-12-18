@@ -207,7 +207,7 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
   );
 };
 
-const CustomerApp: React.FC = () => {
+con st CustomerApp: React.FC = () => {
   const { loading, error } = useStore();
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
