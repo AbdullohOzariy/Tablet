@@ -207,7 +207,7 @@ const MenuViewer: React.FC<{ branch: Branch; onBack: () => void }> = ({ branch, 
   );
 };
 
-con st CustomerApp: React.FC = () => {
+const CustomerApp: React.FC = () => {
   const { loading, error } = useStore();
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
 
@@ -216,5 +216,5 @@ con st CustomerApp: React.FC = () => {
   if (selectedBranch) return <MenuViewer branch={selectedBranch} onBack={() => setSelectedBranch(null)} />;
   return <BranchSelector onSelect={setSelectedBranch} />;
 };
-/* faqat git uchun */
+
 export default CustomerApp;
