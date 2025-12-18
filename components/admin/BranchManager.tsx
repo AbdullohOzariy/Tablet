@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useToast } from '../../context/ToastContext';
 import { Branch } from '../../types';
-import { Store, Plus, Trash2, Edit2, Search, Building, CheckCircle, Link as LinkIcon, Upload } from 'lucide-react';
+import { Store, Plus, Trash2, Edit2, Search, Building, CheckCircle, Link as LinkIcon, Upload, Image as ImageIcon } from 'lucide-react';
 import { Button, Input, Modal, EmptyState, LoadingSpinner } from '../ui';
 
 export const BranchManager: React.FC<{ fabTrigger: number }> = ({ fabTrigger }) => {
